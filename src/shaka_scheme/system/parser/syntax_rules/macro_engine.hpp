@@ -7,6 +7,7 @@
 
 #include "shaka_scheme/system/exceptions/MacroExpansionException.hpp"
 
+#include "shaka_scheme/system/parser/syntax_rules/SyntaxCase.hpp"
 #include "shaka_scheme/system/parser/syntax_rules/MacroContext.hpp"
 
 #include <map>
@@ -310,8 +311,55 @@ void build_macro(NodePtr root, MacroContext& context) {
   // ellipsis (Symbol): string that represents ellipsis, currently set to "..."
   // literal_ids (set<Symbol>): all the literal-IDs that may be in patterns
 
+  // Instantiate SyntaxCases
+  std::vector<SyntaxCase> syntax_cases;
 
+  // Create each SyntaxCase instance
+  while(root->get_type() != Data::Type::NULL_LIST) {
 
+    NodePtr syntax_rule = core::car(root);
+    NodePtr pattern = core::car(syntax_rule);
+    NodePtr templat = core::car(core::cdr(syntax_rule));
+
+    context.push_scope();
+
+    std::cout << *syntax_rule << std::endl;
+    std::cout << *pattern << std::endl;
+    std::cout << *templat << std::endl;
+
+    syntax_cases.push_back(
+        SyntaxCase(
+            macro_keyword,
+            ellipsis,
+            literal_ids,
+            pattern,
+            templat,
+            context.curr_scope
+        )
+    );
+
+    context.pop_scope();
+    std::cout << syntax_cases.back() << std::endl;
+    root = core::cdr(root);
+  }
+
+  // Generate the pattern matcher for each case
+  for(auto& syntax_case : syntax_cases) {
+    syntax_case.generate();
+  }
+
+  // Create Macro instance and bind to symbol in MacroContext
+  MacroPtr macro = std::make_shared<SyntaxRulesMacro>(
+      macro_keyword,
+      syntax_cases
+  );
+
+  std::cout << *macro << std::endl;
+
+  context.map_macro(
+      macro_keyword,
+      macro
+  );
 }
 
 std::ostream& operator<<(

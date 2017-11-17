@@ -61,7 +61,7 @@ struct MacroContext {
 
   /**
    * @brief Intializes the MacroContext with the 0th scope and the 1st scope.
-   * @param hvm The HeapVirtualMachien to query for the presence of primitive
+   * @param hvm The HeapVirtualMachine to query for the presence of primitive
    * forms.
    */
   MacroContext(HeapVirtualMachine& hvm);
