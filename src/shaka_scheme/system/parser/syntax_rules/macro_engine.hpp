@@ -395,8 +395,11 @@ void run_macro_expansion(
     NodePtr proc_name = core::car(root);
     if (core::is_symbol(proc_name)) {
       Symbol identifier = proc_name->get<Symbol>();
-      if (auto macro = get_macro(identifier, macro_context)) {
+      auto macro = get_macro(identifier, macro_context);
+      if (macro) {
         std::cout << "macro_engine: NEED TO EXPAND MACRO HERE!" << std::endl;
+        // TODO: Consider only passing the cdr of root
+        macro->expand(root);
       } else {
         if (process_define_form(root, macro_context)) {
           //std::cout << "PRIMITIVE: define" << std::endl;

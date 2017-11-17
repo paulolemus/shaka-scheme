@@ -25,6 +25,11 @@ void SyntaxCase::generate() {
 }
 
 
+bool SyntaxCase::match(NodePtr macro) {
+  return false;
+}
+
+
 bool SyntaxCase::expand(NodePtr macro) {
   return this->expand_macro(macro);
 }

@@ -50,6 +50,14 @@ struct SyntaxCase {
   void generate();
 
   /**
+   * @brief Match a macro to this SyntaxCase's pattern.
+   * @param macro The NodePtr to the start of the macro use.
+   * @return True if matching, false otherwise.
+   * TODO: This is used mainly for testing purposes, consider removing.
+   */
+  bool match(NodePtr macro);
+
+  /**
    * @brief Match and then expand a macro use. This function only expands the
    * macro if it was a match. On a failure, it does nothing. Note that this
    * function begins a match assuming the NodePtr points to the node *after*
