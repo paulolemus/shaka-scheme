@@ -7,9 +7,9 @@
 #include "shaka_scheme/system/core/types.hpp"
 
 #include "shaka_scheme/system/exceptions/MacroExpansionException.hpp"
-#include "shaka_scheme/system/vm/HeapVirtualMachine.hpp"
 
 #include <functional>
+#include <memory>
 #include <set>
 #include <vector>
 
@@ -17,13 +17,12 @@
 namespace shaka {
 namespace macro {
 
-
 /**
  * @brief The class used for matching to and expanding a single <syntax-rule>,
  * with:
  * <syntax-rule> ::= (<patter> <template>)
  */
-class SyntaxCase {
+struct SyntaxCase {
 
   /**
    * @brief Create SyntaxCase will everything it needs to match a NodePtr
@@ -66,7 +65,7 @@ class SyntaxCase {
    * @brief The function that is generated to match and expand a macro.
    * Default state is as function that simply returns false.
    */
-  std::function<bool(NodePtr)> expand_macro = [](NodePtr root) -> bool {
+  std::function<bool(shaka::NodePtr)> expand_macro = [](NodePtr root) -> bool {
     return false;
   };
 
