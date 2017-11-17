@@ -72,6 +72,7 @@ struct SyntaxRulesMacro {
 
 };
 
+
 /**
  * @brief The alias for the macro pointer type.
  */

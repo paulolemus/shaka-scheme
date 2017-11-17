@@ -120,6 +120,7 @@ struct SyntaxCase {
 
 };
 
+
 } // namespace macro
 } // namespace shaka
 
