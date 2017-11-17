@@ -119,7 +119,7 @@ TEST(MacroContext, other) {
   std::cout << result << std::endl;
 
   if (!result.it) {
-    std::cout << "result.it is not valid." << std::endl;
+    std::cout << "result.itIdentifierData id_data(curr_scopes, std::move(macro)); is not valid." << std::endl;
   }
 
   std::cout << *result.it << std::endl;

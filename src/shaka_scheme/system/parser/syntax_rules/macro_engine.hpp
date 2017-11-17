@@ -125,6 +125,8 @@ bool is_primitive_let_syntax(Symbol symbol, MacroContext& context) {
   return false;
 };
 
+// TODO: LOOK TO THIS FUNCTION FOR A DEMONTRATION ON EXPANDING A LIST
+// Ex: (define (foo f) (+ f 1)) -> (define foo (lambda (f) (+ f 1))
 bool process_define_form(NodePtr& it, MacroContext& context) {
   if (!is_primitive_define(core::car(it)->get<Symbol>(), context)) {
     return false;
@@ -246,6 +248,72 @@ bool process_lambda_form(NodePtr& it, MacroContext& context) {
   }
 };
 
+/**
+ * @brief Build and save a macro to the MacroContext for when a macro is used.
+ * @param root NodePtr to keyword after primitive define-syntax
+ * @param context
+ */
+void build_macro(NodePtr root, MacroContext& context) {
+
+  // TODO: Reached a define syntax keyword. PARSE THE DEFINITION HERE!
+  // TODO: BUILD THE MACRO INSTANCE
+  // TODO: I will need to use context.map_macro(Symbol, MacroPtr) after making macro
+  // TODO: I need to keep track of scope for each case within the macro.
+  // TODO: Expansions are NOT recursive within one expansion. Expansion is called on the root after expansion.
+  // TODO: SyntaxCaseRules ONLY handles a MACRO. A macro is made up of: Macro symbol, list of SyntaxCases.
+  // TODO: SyntaxCase object is contructed with the NodePtr to a case, a list of aux keywords, and the context.
+  // TODO: SyntaxCase symbol in pattern or template can bind to outside symbol. This is why it is constructed with the context.
+  //
+  // SyntaxRulesMacro constructed with Symbol and list of SyntaxCases.
+  // SyntaxCases is constructed with the macro symbol name, aux keywords, and context. It has functions to parse a case.
+  // Move to syntax rules
+  std::cout << "BUILDING MACRO" << std::endl;
+
+  // Save Macro keyword
+  Symbol macro_keyword(Symbol(core::car(root)->get<Symbol>().get_value()));
+  std::cout << macro_keyword << std::endl;
+
+  // Check for transformer spec (starts with primitive syntax-rules)
+  root = core::car(core::cdr(root));
+  Symbol syntax_rules_symbol = core::car(root)->get<Symbol>().get_value();
+  if(!is_primitive_syntax_rules(syntax_rules_symbol, context)) {
+    throw MacroExpansionException(60009, "primitive define-syntax "
+        "must be followed by a keyword and a primitive syntax-rules");
+  }
+
+  // TODO: CHECK FOR ELLIPSIS REPLACEMENT
+  root = core::cdr(root);
+  Symbol ellipsis("...");
+
+  // Make set of literal-IDs from literal-ID list
+  NodePtr literal_id_list = core::car(root);
+  std::set<Symbol> literal_ids;
+
+  if(!core::is_proper_list(literal_id_list)) {
+    throw MacroExpansionException(60008, "missing literal-id proper list");
+  }
+  // Add all literal-IDs in list to set
+  while(literal_id_list->get_type() != Data::Type::NULL_LIST) {
+    NodePtr current_id = core::car(literal_id_list);
+    if(current_id->get_type() != Data::Type::SYMBOL) {
+      throw MacroExpansionException(60007, "Invalid literal-id type");
+    }
+    literal_ids.insert(current_id->get<Symbol>());
+    literal_id_list = core::cdr(literal_id_list);
+  }
+
+  root = core::cdr(root);
+
+  // Here we have reached the syntax rule list
+  // Important variables that have been created so far:
+  // macro_keyword (Symbol): the special keyword of the macro
+  // ellipsis (Symbol): string that represents ellipsis, currently set to "..."
+  // literal_ids (set<Symbol>): all the literal-IDs that may be in patterns
+
+
+
+}
+
 std::ostream& operator<<(
     std::ostream& lhs,
     const MacroContext& rhs) {
@@ -274,12 +342,13 @@ void run_macro_expansion(
   //}
   int count = 0;
   bool need_to_pop_scope = false;
+  // Checks if the NodePtr is a list. It is assumed that input is NOT an inproper list.
   if (core::is_pair(root)) {
     NodePtr proc_name = core::car(root);
     if (core::is_symbol(proc_name)) {
       Symbol identifier = proc_name->get<Symbol>();
       if (auto macro = get_macro(identifier, macro_context)) {
-        //std::cout << "NEED TO EXPAND MACRO HERE!" << std::endl;
+        std::cout << "macro_engine: NEED TO EXPAND MACRO HERE!" << std::endl;
       } else {
         if (process_define_form(root, macro_context)) {
           //std::cout << "PRIMITIVE: define" << std::endl;
@@ -292,9 +361,11 @@ void run_macro_expansion(
           //std::cout << "PRIMITIVE: quote" << std::endl;
           return;
         } else if (is_primitive_define_syntax(identifier, macro_context)) {
-          //std::cout << "PRIMITIVE: define-syntax" << std::endl;
+          std::cout << "PRIMITIVE: define-syntax" << std::endl;
           need_to_pop_scope = true;
           macro_context.push_scope();
+          build_macro(core::cdr(root), macro_context);
+
         } else if (is_primitive_let_syntax(identifier, macro_context)) {
           //std::cout << "PRIMITIVE: let-syntax" << std::endl;
           need_to_pop_scope = true;

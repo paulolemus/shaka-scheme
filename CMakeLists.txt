@@ -58,6 +58,7 @@ set(SOURCE_FILES
         src/shaka_scheme/system/base/PrimitiveFormMarker.cpp
         src/shaka_scheme/system/parser/syntax_rules/MacroContext.cpp
         src/shaka_scheme/system/parser/syntax_rules/SyntaxRulesMacro.cpp
+        src/shaka_scheme/system/parser/syntax_rules/SyntaxCase.cpp
         )
 
 add_library(${SHAKA_SCHEME_LIBRARY_NAME} SHARED ${SOURCE_FILES})

@@ -1,6 +1,7 @@
 #ifndef SHAKA_SCHEME_SYNTAXRULESMACRO_HPP
 #define SHAKA_SCHEME_SYNTAXRULESMACRO_HPP
 
+#include "shaka_scheme/system/core/lists.hpp"
 #include <memory>
 
 namespace shaka {
@@ -9,13 +10,16 @@ namespace macro {
 /**
  * @brief The type of a syntax-rules macro.
  *
- * It stores its pattern-matching and substitution functionality.
+ * It stores its pattern-matching and substitution functionality for one
+ * specific macro.
  *
  * This type is meant to operator on Scheme lists with an additional
  * MacroChecker context -- unlike R6RS, syntax objects are not directly needed
  * to support R7RS.
  */
 class SyntaxRulesMacro {
+
+
 };
 
 /**

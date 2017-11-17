@@ -94,7 +94,7 @@ struct MacroContext {
 
   /**
    * @brief Gets an iterator to a list of bindings that share the same
-   * symbol, but not necesarily the same sets of scopes.
+   * symbol, but not necessarily the same sets of scopes.
    * @param symbol The symbol to query for in the identifier bindings.
    * @return A constant iterator to a list of bindings.
    */
@@ -125,7 +125,7 @@ struct MacroContext {
   std::size_t curr_scope = 0;
 
   /**
-   * @brief Stores the next scope. Defeaults to curr_scope + 1.
+   * @brief Stores the next scope. Defaults to curr_scope + 1.
    */
   std::size_t next_scope = 1;
 
