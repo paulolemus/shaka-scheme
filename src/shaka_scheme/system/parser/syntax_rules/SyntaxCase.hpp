@@ -142,6 +142,12 @@ struct SyntaxCase {
 };
 
 
+/**
+ * @brief Alias for type.
+ */
+using SyntaxCasePtr = std::shared_ptr<SyntaxCase>;
+
+
 } // namespace macro
 } // namespace shaka
 

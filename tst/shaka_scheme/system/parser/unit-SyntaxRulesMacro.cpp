@@ -13,7 +13,7 @@ using namespace shaka;
 
 TEST(SyntaxRulesMacroUnitTest, constructor) {
   Symbol macro_keyword("my-if");
-  std::vector<SyntaxCase> cases;
+  std::vector<SyntaxCasePtr > cases;
 
   SyntaxRulesMacro macro(macro_keyword, cases);
   ASSERT_EQ(macro.macro_keyword, macro_keyword);
@@ -34,7 +34,7 @@ TEST(SyntaxRulesMacroUnitTest, match_simple) {
   //   (syntax-rules ()
   //     [(test) (quote hello)]))
   Symbol macro_keyword("test");
-  std::vector<SyntaxCase> cases;
+  std::vector<SyntaxCasePtr> cases;
 
   Symbol ellipsis("...");
   std::set<Symbol> literal_ids;
@@ -42,7 +42,7 @@ TEST(SyntaxRulesMacroUnitTest, match_simple) {
   NodePtr templat = list(c(Symbol("quote")), c(Symbol("hello")));
   std::size_t scope = 3;
 
-  SyntaxCase syntax_case(
+  SyntaxCasePtr syntax_case = std::make_shared<SyntaxCase>(
       macro_keyword,
       ellipsis,
       literal_ids,
@@ -50,7 +50,7 @@ TEST(SyntaxRulesMacroUnitTest, match_simple) {
       templat,
       scope
   );
-  syntax_case.generate();
+  syntax_case->generate();
   cases.push_back(syntax_case);
 
   SyntaxRulesMacro macro(macro_keyword, cases);
@@ -58,11 +58,78 @@ TEST(SyntaxRulesMacroUnitTest, match_simple) {
 
   NodePtr expr1 = list(c(Symbol("test")));
 
+  ASSERT_TRUE(syntax_case->expand(expr1));
   ASSERT_TRUE(macro.expand(expr1));
-
 }
 
-/*
+TEST(SyntaxRulesMacroUnitTest, match_multiple_cases) {
+  const auto& c = create_node;
+
+  // Build macro
+  // (define-syntax test
+  //   (syntax-rules ()
+  //     [(test) (quote hello)]
+  //     [(test a ...) (quote (a ...))]))
+  Symbol macro_keyword("test");
+  std::vector<SyntaxCasePtr> cases;
+
+  Symbol ellipsis("...");
+  std::set<Symbol> literal_ids;
+  NodePtr pattern = list(c(Symbol("test")));
+  NodePtr templat = list(c(Symbol("quote")), c(Symbol("hello")));
+  std::size_t scope = 3;
+
+  SyntaxCasePtr syntax_case = std::make_shared<SyntaxCase>(
+      macro_keyword,
+      ellipsis,
+      literal_ids,
+      pattern,
+      templat,
+      scope
+  );
+  syntax_case->generate();
+  cases.push_back(syntax_case);
+
+  NodePtr pattern2 = list(c(Symbol("test")), c(Symbol("a")), c(Symbol("...")));
+  NodePtr templat2 = list(
+      c(Symbol("quote")),
+      list(
+          c(Symbol("a'")),
+          c(Symbol("..."))
+      )
+  );
+  std::size_t scope2 = 4;
+  SyntaxCasePtr syntax_case2 = std::make_shared<SyntaxCase>(
+      macro_keyword,
+      ellipsis,
+      literal_ids,
+      pattern2,
+      templat2,
+      scope2
+  );
+  syntax_case2->generate();
+  cases.push_back(syntax_case2);
+
+  SyntaxRulesMacro macro(macro_keyword, cases);
+  std::cout << macro << std::endl;
+
+  NodePtr expr1 = list(c(Symbol("test")));
+  NodePtr expr2 = list(
+      c(Symbol("test")),
+      list(
+          c(Symbol("quote")),
+          c(Symbol("one-hundred"))
+      ),
+      c(Symbol("the-end"))
+  );
+
+  std::cout << *expr1 << std::endl;
+  std::cout << *expr2 << std::endl;
+
+  ASSERT_TRUE(macro.expand(expr1));
+  ASSERT_TRUE(macro.expand(expr2));
+}
+
 TEST(SyntaxRulesMacroUnitTest, parse_string) {
 
   // HVM required for MacroContext
@@ -170,5 +237,23 @@ TEST(SyntaxRulesMacroUnitTest, parse_syntax_rules) {
   std::cout << *result.it << std::endl;
 
   run_macro_expansion(result.it, context);
+
+  MacroPtr retrieved_macro = nullptr;
+  for(auto it = context.get_bindings(Symbol("one"));
+      it != context.identifier_bindings.end();
+      ++it) {
+
+    if(it->second.macro) {
+      retrieved_macro = it->second.macro;
+      break;
+    }
+  }
+
+  if(retrieved_macro) {
+    std::cout << "RETRIEVED MACRO" << std::endl;
+    std::cout << *retrieved_macro << std::endl;
+
+  } else {
+    FAIL();
+  }
 }
- */

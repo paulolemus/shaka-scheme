@@ -36,7 +36,7 @@ struct SyntaxRulesMacro {
    */
   SyntaxRulesMacro(
       Symbol& macro_keyword,
-      std::vector<SyntaxCase>& syntax_cases
+      std::vector<SyntaxCasePtr>& syntax_cases
   );
 
   /**
@@ -56,7 +56,7 @@ struct SyntaxRulesMacro {
   /**
    * @brief SyntaxCase instances used for matching.
    */
-  std::vector<SyntaxCase> syntax_cases;
+  std::vector<shaka::macro::SyntaxCasePtr> syntax_cases;
 
 
   /**

@@ -5,7 +5,7 @@ namespace macro {
 
 SyntaxRulesMacro::SyntaxRulesMacro(
     Symbol& macro_keyword,
-    std::vector<SyntaxCase>& syntax_cases
+    std::vector<SyntaxCasePtr>& syntax_cases
 ) : syntax_cases(syntax_cases) {
   this->macro_keyword = macro_keyword;
 }
@@ -13,7 +13,7 @@ SyntaxRulesMacro::SyntaxRulesMacro(
 bool SyntaxRulesMacro::expand(NodePtr macro) {
 
   for(auto& syntax_case : syntax_cases) {
-    if(syntax_case.expand(macro)) {
+    if(syntax_case->expand(macro)) {
       return true;
     }
   }
@@ -31,7 +31,7 @@ std::ostream& operator<<(
   lhs << "macro: " << rhs.macro_keyword << "|";
   lhs << "cases: ";
   for(auto& syntax_case : rhs.syntax_cases) {
-    lhs << syntax_case << ", ";
+    lhs << *syntax_case << ", ";
   }
   lhs << "}";
   return lhs;

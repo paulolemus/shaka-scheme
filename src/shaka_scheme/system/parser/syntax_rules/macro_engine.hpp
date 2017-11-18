@@ -312,7 +312,7 @@ void build_macro(NodePtr root, MacroContext& context) {
   // literal_ids (set<Symbol>): all the literal-IDs that may be in patterns
 
   // Instantiate SyntaxCases
-  std::vector<SyntaxCase> syntax_cases;
+  std::vector<SyntaxCasePtr> syntax_cases;
 
   // Create each SyntaxCase instance
   while(root->get_type() != Data::Type::NULL_LIST) {
@@ -327,25 +327,24 @@ void build_macro(NodePtr root, MacroContext& context) {
     std::cout << *pattern << std::endl;
     std::cout << *templat << std::endl;
 
-    syntax_cases.push_back(
-        SyntaxCase(
-            macro_keyword,
-            ellipsis,
-            literal_ids,
-            pattern,
-            templat,
-            context.curr_scope
-        )
+    SyntaxCasePtr syntax_case = std::make_shared<SyntaxCase>(
+        macro_keyword,
+        ellipsis,
+        literal_ids,
+        pattern,
+        templat,
+        context.curr_scope
     );
+    syntax_cases.push_back(syntax_case);
 
     context.pop_scope();
-    std::cout << syntax_cases.back() << std::endl;
+    std::cout << *syntax_cases.back() << std::endl;
     root = core::cdr(root);
   }
 
   // Generate the pattern matcher for each case
   for(auto& syntax_case : syntax_cases) {
-    syntax_case.generate();
+    syntax_case->generate();
   }
 
   // Create Macro instance and bind to symbol in MacroContext
