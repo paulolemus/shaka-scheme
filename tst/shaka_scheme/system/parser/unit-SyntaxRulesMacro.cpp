@@ -11,38 +11,58 @@ using namespace shaka::core;
 using namespace shaka::macro;
 using namespace shaka;
 
+TEST(SyntaxRulesMacroUnitTest, constructor) {
+  Symbol macro_keyword("my-if");
+  std::vector<SyntaxCase> cases;
 
-TEST(SyntaxRulesMacroUnitTest, match_base) {
+  SyntaxRulesMacro macro(macro_keyword, cases);
+  ASSERT_EQ(macro.macro_keyword, macro_keyword);
+  ASSERT_EQ(macro.syntax_cases.size(), 0);
 
-  auto root = list(create_node(Symbol("M")));
-  std::cout << *root << std::endl;
-  ASSERT_EQ(car(root)->get<Symbol>(), Symbol("M"));
+  MacroPtr macro_ptr = std::make_shared<SyntaxRulesMacro>(macro_keyword, cases);
+  ASSERT_EQ(macro_ptr->macro_keyword, macro_keyword);
+  ASSERT_EQ(macro_ptr->syntax_cases.size(), 0);
+
+  std::cout << macro << std::endl;
 }
 
-
-TEST(SyntaxRulesMacroUnitTest, match_two) {
-  auto root1 = list(create_node(Symbol("M")), create_node(String("testing")));
-  auto root2 = list(create_node(Symbol("M")), list(create_node(Symbol("quote"))));
-
-  std::cout << *root1 << std::endl;
-  std::cout << *root2 << std::endl;
-
-  ASSERT_EQ(length(root1), 2);
-  ASSERT_EQ(length(root2), 2);
-}
-
-TEST(SyntaxRulesMacroUnitTest, make_sexp) {
+TEST(SyntaxRulesMacroUnitTest, match_simple) {
   const auto& c = create_node;
 
+  // Build macro
+  // (define-syntax test
+  //   (syntax-rules ()
+  //     [(test) (quote hello)]))
+  Symbol macro_keyword("test");
+  std::vector<SyntaxCase> cases;
 
-  NodePtr expr =
-      list(
-          c(Symbol("define")),
-          c(Symbol("x")),
-          c(Symbol("\'helloworld"))
-      );
+  Symbol ellipsis("...");
+  std::set<Symbol> literal_ids;
+  NodePtr pattern = list(c(Symbol("test")));
+  NodePtr templat = list(c(Symbol("quote")), c(Symbol("hello")));
+  std::size_t scope = 3;
+
+  SyntaxCase syntax_case(
+      macro_keyword,
+      ellipsis,
+      literal_ids,
+      pattern,
+      templat,
+      scope
+  );
+  syntax_case.generate();
+  cases.push_back(syntax_case);
+
+  SyntaxRulesMacro macro(macro_keyword, cases);
+  std::cout << macro << std::endl;
+
+  NodePtr expr1 = list(c(Symbol("test")));
+
+  ASSERT_TRUE(macro.expand(expr1));
+
 }
 
+/*
 TEST(SyntaxRulesMacroUnitTest, parse_string) {
 
   // HVM required for MacroContext
@@ -150,23 +170,5 @@ TEST(SyntaxRulesMacroUnitTest, parse_syntax_rules) {
   std::cout << *result.it << std::endl;
 
   run_macro_expansion(result.it, context);
-
-  std::cout << context << std::endl;
-  std::cout << *result.it << std::endl;
-
-  // Insert macro, then run expansion on new form
-  //std::string macro_use = "(one)";
-  //parser::ParserInput macro_use_input(macro_use);
-  //auto macro_result = parser::parse_datum(macro_use_input);
-  //context.map_macro(Symbol("one"), std::make_shared<SyntaxRulesMacro>());
-
-  //std::cout << macro_use << std::endl;
-  //std::cout << context << std::endl;
-  //std::cout << *macro_result.it << std::endl;
-
-  //run_macro_expansion(macro_result.it, context);
-
-  //std::cout << context << std::endl;
-  //std::cout << *result.it << std::endl;
-
 }
+ */

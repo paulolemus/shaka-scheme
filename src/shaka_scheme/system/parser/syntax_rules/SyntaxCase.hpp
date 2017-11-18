@@ -18,6 +18,12 @@ namespace shaka {
 namespace macro {
 
 /**
+ * @brief Type used for generating and saving pattern matchers.
+ */
+using SyntaxRule = std::function<bool()>;
+
+
+/**
  * @brief The class used for matching to and expanding a single <syntax-rule>,
  * with:
  * <syntax-rule> ::= (<patter> <template>)
@@ -46,6 +52,7 @@ struct SyntaxCase {
   /**
    * @brief Generates the function used to match a macro use.
    * Throws MacroExpansionException if the pattern is malformed.
+   * @return Reference to current instance.
    */
   void generate();
 
@@ -73,9 +80,10 @@ struct SyntaxCase {
    * @brief The function that is generated to match and expand a macro.
    * Default state is as function that simply returns false.
    */
-  std::function<bool(shaka::NodePtr)> expand_macro = [](NodePtr root) -> bool {
+  SyntaxRule expand_macro = []() -> bool {
     return false;
   };
+
 
   /**
    * @brief The name of the macro this case belongs to.
@@ -107,6 +115,11 @@ struct SyntaxCase {
    * expansion.
    */
   NodePtr templat;
+
+  /**
+   * @brief Used for matching.
+   */
+  NodePtr it;
 
   /**
    * @brief The unique scope to this particular syntax case.

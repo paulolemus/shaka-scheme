@@ -210,7 +210,12 @@ TEST(SyntaxCaseUnitTest, match_simples) {
   ASSERT_EQ(literal_ids, syntax_case.literal_ids);
   ASSERT_EQ(pattern, syntax_case.pattern);
   ASSERT_EQ(templat, syntax_case.templat);
-  ASSERT_NO_THROW(syntax_case.generate());
+  try {
+    syntax_case.generate();
+  } catch(const std::exception& e) {
+    std::cout << e.what() << std::endl;
+    FAIL();
+  }
 
   NodePtr valid_expr1 = list(
       c(Symbol("test")),
@@ -229,3 +234,116 @@ TEST(SyntaxCaseUnitTest, match_simples) {
 }
 
 
+/**
+ * @brief After generation, can I fail to match to a simple macro use?
+ */
+TEST(SyntaxCaseUnitTest, match_simples_fail) {
+  const auto& c = create_node;
+
+  // Testing macro:
+  // (define-syntax test () (syntax-rules () [(test a) (quote a)]))
+  Symbol macro_keyword("test");
+  Symbol ellipsis("...");
+  std::set<Symbol> literal_ids;
+  NodePtr pattern = list(c(Symbol("test")), c(Symbol("a")));
+  NodePtr templat = list(c(Symbol("quote")), c(Symbol("a")));
+  std::size_t scope = 3;
+
+  SyntaxCase syntax_case(
+      macro_keyword,
+      ellipsis,
+      literal_ids,
+      pattern,
+      templat,
+      scope
+  );
+  std::cout << syntax_case << std::endl;
+
+  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
+  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
+  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
+  ASSERT_EQ(pattern, syntax_case.pattern);
+  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_NO_THROW(syntax_case.generate());
+
+  NodePtr valid_expr1 = list(c(Symbol("test")));
+  NodePtr valid_expr2 = list(
+      c(Symbol("test")),
+      c(Symbol("hi")),
+      c(Symbol("there"))
+  );
+
+  std::cout << *valid_expr1 << std::endl;
+  std::cout << *valid_expr2 << std::endl;
+
+  ASSERT_FALSE(syntax_case.match(valid_expr1));
+  ASSERT_FALSE(syntax_case.match(valid_expr2));
+}
+
+
+/**
+ * @brief After generation, can I match a use with ellipsis?
+ */
+TEST(SyntaxCaseUnitTest, match_with_ellipsis) {
+  const auto& c = create_node;
+
+  // Testing macro:
+  // (define-syntax test () (syntax-rules () [(test a ...) (quote (a ...))]))
+  Symbol macro_keyword("test");
+  Symbol ellipsis("...");
+  std::set<Symbol> literal_ids;
+  NodePtr pattern = list(
+      c(Symbol("test")),
+      c(Symbol("a")),
+      c(Symbol("..."))
+  );
+  NodePtr templat = list(
+      c(Symbol("quote")),
+      list(
+          c(Symbol("a")),
+          c(Symbol("..."))
+      )
+  );
+  std::size_t scope = 3;
+
+  SyntaxCase syntax_case(
+      macro_keyword,
+      ellipsis,
+      literal_ids,
+      pattern,
+      templat,
+      scope
+  );
+  std::cout << syntax_case << std::endl;
+
+  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
+  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
+  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
+  ASSERT_EQ(pattern, syntax_case.pattern);
+  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_NO_THROW(syntax_case.generate());
+
+  NodePtr valid_expr1 = list(
+      c(Symbol("test")),
+      c(Symbol("hi"))
+  );
+  NodePtr valid_expr2 = list(
+      c(Symbol("test")),
+      c(Symbol("hello")),
+      c(Symbol("goodbye"))
+  );
+  NodePtr valid_expr3 = list(
+      c(Symbol("test")),
+      c(Symbol("hello")),
+      c(Symbol("goodbye")),
+      c(Symbol("wazzup"))
+  );
+
+  std::cout << *valid_expr1 << std::endl;
+  std::cout << *valid_expr2 << std::endl;
+  std::cout << *valid_expr3 << std::endl;
+
+  ASSERT_TRUE(syntax_case.match(valid_expr1));
+  ASSERT_TRUE(syntax_case.match(valid_expr2));
+  ASSERT_TRUE(syntax_case.match(valid_expr3));
+}

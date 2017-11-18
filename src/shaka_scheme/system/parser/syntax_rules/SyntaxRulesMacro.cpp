@@ -17,7 +17,10 @@ bool SyntaxRulesMacro::expand(NodePtr macro) {
       return true;
     }
   }
-  return false;
+  throw MacroExpansionException(
+      60006,
+      "Failed to parse " + this->macro_keyword.get_value() + " macro"
+  );
 }
 
 std::ostream& operator<<(
