@@ -88,9 +88,9 @@ SyntaxRule create_rule_identifier(
 
     // Identifier matches to almost anything
     if(!core::is_symbol(syntax_case->it) &&
-       !core::is_proper_list(syntax_case->it) &&
-       !core::is_boolean(syntax_case->it) &&
-       !core::is_string(syntax_case->it)) {
+        !core::is_proper_list(syntax_case->it) &&
+        !core::is_boolean(syntax_case->it) &&
+        !core::is_string(syntax_case->it)) {
       return false;
     }
 
@@ -190,7 +190,7 @@ void SyntaxCase::generate() {
     // Create initial rule to match macro name.
     built_expander =
         create_rule_keyword(this, macro_keyword) |
-        create_rule_keyword(this, Symbol("_"));
+            create_rule_keyword(this, Symbol("_"));
 
 
     // Loop through pattern building a expander.
@@ -213,7 +213,7 @@ void SyntaxCase::generate() {
       }
 
       // Check for special keywords
-      if(literal_ids.find(curr->get<Symbol>()) != literal_ids.end()) {
+      if(literal_ids.count(curr->get<Symbol>()) > 0) {
         new_rule = create_rule_keyword(this, curr->get<Symbol>());
       } else {
         new_rule = create_rule_identifier(this);
@@ -240,17 +240,163 @@ void SyntaxCase::generate() {
             + macro_keyword.get_value()
     );
   }
-  expand_macro = built_expander;
+  parse_macro_use = built_expander;
 }
 
 bool SyntaxCase::match(NodePtr macro) {
+  transform_bindings.clear();
   it = macro;
-  return expand_macro();
+  return parse_macro_use();
 }
 
-bool SyntaxCase::expand(NodePtr macro) {
-  it = macro;
-  return expand_macro();
+
+/*
+ * Assistive function
+ * Macro transformation and expansion
+ */
+NodePtr SyntaxCase::transform_identifier(
+    NodePtr curr,
+    NodePtr next
+) {
+  const auto& c = create_node;
+
+  NodePtr segment = core::list();
+  auto map_iter = transform_bindings.find(curr->get<Symbol>());
+  bool followed_by_ellipse = false;
+
+  // Check for leading ellipsis.
+  if(next->get_type() == Data::Type::DATA_PAIR &&
+     core::car(next)->get_type() == Data::Type::SYMBOL &&
+     core::car(next)->get<Symbol>() == ellipsis) {
+    followed_by_ellipse = true;
+  }
+
+  if(map_iter != transform_bindings.end()) {
+    // Process a pattern variable.
+    // If the vector contains a single NodePtr, the variable should NOT be
+    // followed by ellipses.
+    auto& bindings = map_iter->second;
+
+    if(!followed_by_ellipse && bindings.size() > 1) {
+      // There is a mismatch: cannot be more than 1 binding without ellipsis.
+      throw MacroExpansionException(
+          60001,
+          "Found more than one binding without ellipsis repeat pattern"
+      );
+    }
+
+    // Build expanded form.
+    for(auto& node : bindings) {
+
+      NodePtr sub_segment = core::list();
+
+      if(node->get_type() == Data::Type::SYMBOL) {
+        sub_segment = core::append(
+            sub_segment,
+            c(Symbol(node->get<Symbol>().get_value()))
+        );
+
+      } else if(node->get_type() == Data::Type::PRIMITIVE_FORM) {
+        sub_segment = core::append(
+            sub_segment,
+            c(PrimitiveFormMarker(node->get<PrimitiveFormMarker>().get()))
+        );
+
+      } else if(node->get_type() == Data::Type::STRING) {
+        sub_segment = core::append(
+            sub_segment,
+            c(String(node->get<String>().get_string()))
+        );
+
+      } else if(node->get_type() == Data::Type::BOOLEAN) {
+        sub_segment = core::append(
+            sub_segment,
+            c(Boolean(node->get<Boolean>().get_value()))
+        );
+
+      } else if(node->get_type() == Data::Type::NULL_LIST) {
+        sub_segment = core::append(
+            sub_segment,
+            core::list(core::list())
+        );
+
+      } else if(node->get_type() == Data::Type::DATA_PAIR) {
+        // TODO!!
+
+      } else {
+        throw MacroExpansionException(
+            60020,
+            "Unimplemented identifier expansion"
+        );
+      }
+
+      segment = core::append(segment, sub_segment);
+    }
+
+
+  } else {
+    // May be a free variable.
+    segment = core::append(
+        segment, shaka::create_node(Symbol(curr->get<Symbol>().get_value()))
+    );
+  }
+
+  return segment;
+}
+
+
+void SyntaxCase::expand(NodePtr macro) {
+  const auto& c = shaka::create_node;
+
+  NodePtr expanded_form = core::list();
+  NodePtr expanded_it = expanded_form;
+  NodePtr curr = templat;
+  it = templat;
+  NodePtr segment;
+
+  // Begin generation from template
+  while(it->get_type() != Data::Type::NULL_LIST) {
+
+    curr = core::car(it);
+    it = core::cdr(it);
+
+    switch(curr->get_type()) {
+    case Data::Type::SYMBOL:
+      if(curr->get<Symbol>() != ellipsis) {
+        segment = transform_identifier(curr, it);
+      }
+      break;
+
+    case Data::Type::PRIMITIVE_FORM:
+      segment = core::list(
+          c(PrimitiveFormMarker(curr->get<PrimitiveFormMarker>().get()))
+      );
+      break;
+
+    case Data::Type::BOOLEAN:
+      segment = core::list(c(Boolean(curr->get<Boolean>().get_value())));
+      break;
+
+    case Data::Type::STRING:
+      segment = core::list(c(String(curr->get<String>().get_string())));
+      break;
+
+    default:
+      throw MacroExpansionException(
+          60001,
+          "NodePtr type is not implemented for macro expansion"
+      );
+    }
+
+    // Append to expanded_form
+    expanded_form = core::append(expanded_form, segment);
+  }
+
+
+  // After expansion is finished, replace original pointer
+  core::set_car(macro, core::car(expanded_form));
+  core::set_cdr(macro, core::cdr(expanded_form));
+  transform_bindings.clear();
 }
 
 

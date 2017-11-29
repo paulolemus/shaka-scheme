@@ -18,21 +18,13 @@ TEST(SyntaxCaseUnitTest, constructor) {
   const auto& c = create_node;
 
   // Testing macro:
-  // (define-syntax test () (syntax-rules () [(test) (quote hello)]))
+  // (define-syntax test (syntax-rules () [(test) (quote hello)]))
   Symbol macro_keyword("test");
   Symbol ellipsis("...");
   std::set<Symbol> literal_ids;
   NodePtr pattern = list(c(Symbol("test")));
   NodePtr templat = list(c(Symbol("quote")), c(Symbol("hello")));
   std::size_t scope = 4;
-
-  std::cout << macro_keyword << std::endl;
-  std::cout << ellipsis << std::endl;
-  for(auto& id : literal_ids) {
-    std::cout << id << std::endl;
-  }
-  std::cout << *pattern << std::endl;
-  std::cout << *templat << std::endl;
 
   SyntaxCase syntax_case(
       macro_keyword,
@@ -83,14 +75,6 @@ TEST(SyntaxCaseUnitTest, construction_with_complexion) {
   );
   std::size_t scope = 4;
 
-  std::cout << macro_keyword << std::endl;
-  std::cout << ellipsis << std::endl;
-  for(auto& id : literal_ids) {
-    std::cout << id << std::endl;
-  }
-  std::cout << *pattern << std::endl;
-  std::cout << *templat << std::endl;
-
   SyntaxCase syntax_case(
       macro_keyword,
       ellipsis,
@@ -109,16 +93,15 @@ TEST(SyntaxCaseUnitTest, construction_with_complexion) {
   ASSERT_EQ(templat, syntax_case.templat);
 }
 
-
 /**
  * @brief Can I generate an internal matcher function given a valid initial
- * state?
+ *        state?
  */
 TEST(SyntaxCaseUnitTest, generate_simple) {
   const auto& c = create_node;
 
   // Testing macro:
-  // (define-syntax test () (syntax-rules () [(test) (quote hello)]))
+  // (define-syntax test (syntax-rules () [(test) (quote hello)]))
   Symbol macro_keyword("test");
   Symbol ellipsis("...");
   std::set<Symbol> literal_ids;
@@ -145,7 +128,6 @@ TEST(SyntaxCaseUnitTest, generate_simple) {
   ASSERT_NO_THROW(syntax_case.generate());
 }
 
-
 /**
  * @brief Given an invalid state, does matcher generate throw an exception?
  */
@@ -153,7 +135,7 @@ TEST(SyntaxCaseUnitTest, generate_exception) {
   const auto& c = create_node;
 
   // Testing macro:
-  // (define-syntax test () (syntax-rules () [test (quote hello)]))
+  // (define-syntax test (syntax-rules () [test (quote hello)]))
   Symbol macro_keyword("test");
   Symbol ellipsis("...");
   std::set<Symbol> literal_ids;
@@ -169,6 +151,7 @@ TEST(SyntaxCaseUnitTest, generate_exception) {
       templat,
       scope
   );
+
   std::cout << syntax_case << std::endl;
 
   ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
@@ -187,7 +170,7 @@ TEST(SyntaxCaseUnitTest, match_simples) {
   const auto& c = create_node;
 
   // Testing macro:
-  // (define-syntax test () (syntax-rules () [(test a) (quote a)]))
+  // (define-syntax test (syntax-rules () [(test a) (quote a)]))
   Symbol macro_keyword("test");
   Symbol ellipsis("...");
   std::set<Symbol> literal_ids;
@@ -203,6 +186,7 @@ TEST(SyntaxCaseUnitTest, match_simples) {
       templat,
       scope
   );
+
   std::cout << syntax_case << std::endl;
 
   ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
@@ -241,7 +225,7 @@ TEST(SyntaxCaseUnitTest, match_simples_fail) {
   const auto& c = create_node;
 
   // Testing macro:
-  // (define-syntax test () (syntax-rules () [(test a) (quote a)]))
+  // (define-syntax test (syntax-rules () [(test a) (quote a)]))
   Symbol macro_keyword("test");
   Symbol ellipsis("...");
   std::set<Symbol> literal_ids;
@@ -288,7 +272,7 @@ TEST(SyntaxCaseUnitTest, match_with_ellipsis) {
   const auto& c = create_node;
 
   // Testing macro:
-  // (define-syntax test () (syntax-rules () [(test a ...) (quote (a ...))]))
+  // (define-syntax test (syntax-rules () [(test a ...) (quote (a ...))]))
   Symbol macro_keyword("test");
   Symbol ellipsis("...");
   std::set<Symbol> literal_ids;
@@ -338,6 +322,7 @@ TEST(SyntaxCaseUnitTest, match_with_ellipsis) {
       c(Symbol("goodbye")),
       c(Symbol("wazzup"))
   );
+  NodePtr invalid_expr1 = list(c(Symbol("test")));
 
   std::cout << *valid_expr1 << std::endl;
   std::cout << *valid_expr2 << std::endl;
@@ -346,4 +331,155 @@ TEST(SyntaxCaseUnitTest, match_with_ellipsis) {
   ASSERT_TRUE(syntax_case.match(valid_expr1));
   ASSERT_TRUE(syntax_case.match(valid_expr2));
   ASSERT_TRUE(syntax_case.match(valid_expr3));
+  ASSERT_FALSE(syntax_case.match(invalid_expr1));
 }
+
+TEST(SyntaxCaseUnitTest, match_with_macro) {
+  const auto& c = create_node;
+
+  /*
+   * Macro definition:
+   * (define-syntax reduce
+   *   (syntax-case ()
+   *     [(reduce a b c) ()]
+   */
+}
+
+/**
+ * @brief Can I match to a macro use with literal ids?
+ * TODO: FINISH THIS TESTCASE
+ */
+TEST(SyntaxCaseUnitTest, match_with_literal_ids) {
+  const auto& c = create_node;
+
+  // Testing macro:
+  // (define-syntax test
+  //   (syntax-rules (then)
+  //     [(test a then b) (quote (a b))]))
+  Symbol macro_keyword("test");
+  Symbol ellipsis("...");
+  std::set <Symbol> literal_ids {Symbol("then")};
+  NodePtr pattern = list(
+      c(Symbol("test")),
+      c(Symbol("a")),
+      c(Symbol("then")),
+      c(Symbol("b"))
+  );
+  NodePtr templat = list(
+      c(Symbol("quote")),
+      list(
+          c(Symbol("a")),
+          c(Symbol("b"))
+      )
+  );
+  std::size_t scope = 3;
+
+  SyntaxCase syntax_case(
+      macro_keyword,
+      ellipsis,
+      literal_ids,
+      pattern,
+      templat,
+      scope
+  );
+  std::cout << syntax_case << std::endl;
+
+  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
+  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
+  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
+  ASSERT_EQ(pattern, syntax_case.pattern);
+  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_NO_THROW(syntax_case.generate());
+
+  NodePtr valid_expr1 = list(
+      c(Symbol("test")),
+      c(Symbol("x")),
+      c(Symbol("then")),
+      c(Symbol("y"))
+  );
+  NodePtr valid_expr2 = list(
+      c(Symbol("test")),
+      c(Symbol("x")),
+      c(Symbol("then")),
+      list(
+          c(Symbol("y")),
+          c(Symbol("z"))
+      )
+  );
+  NodePtr invalid_expr = list(
+      c(Symbol("test")),
+      c(Symbol("a")),
+      c(Symbol("then"))
+  );
+
+  std::cout << *valid_expr1  << std::endl;
+  std::cout << *valid_expr2  << std::endl;
+  std::cout << *invalid_expr << std::endl;
+
+  ASSERT_TRUE(syntax_case.match(valid_expr1));
+  ASSERT_TRUE(syntax_case.match(valid_expr2));
+  ASSERT_FALSE(syntax_case.match(invalid_expr));
+}
+
+/**
+ * @brief After matching, can I expand a simple macro in place?
+ */
+TEST(SyntaxCaseUnitTest, expand_simple_macro) {
+  const auto& c = create_node;
+
+  // Macro:
+  // (define-syntax simple
+  //   (syntax-rules ()
+  //     [(simple a) (quote a)]))
+  Symbol macro_keyword("simple");
+  Symbol ellipsis("...");
+  std::set<Symbol> literal_ids;
+  NodePtr pattern = list(
+      c(Symbol("simple")),
+      c(Symbol("a"))
+  );
+  NodePtr templat = list(
+      c(Symbol("quote")),
+      c(Symbol("a"))
+  );
+  std::size_t scope = 3;
+
+  // TESTING
+  NodePtr lst = list();
+  std::cout << *lst << std::endl;
+  lst = append(lst, list(list()));
+  std::cout << *lst << std::endl;
+  // lst = append(lst, list(c(Symbol("first")), c(Symbol("second"))));
+  // std::cout << *lst << std::endl;
+  // lst = append(lst, list(c(Symbol("first")), c(Symbol("second"))));
+  // std::cout << *lst << std::endl;
+
+  SyntaxCase syntax_case(
+      macro_keyword,
+      ellipsis,
+      literal_ids,
+      pattern,
+      templat,
+      scope
+  );
+  std::cout << syntax_case << std::endl;
+
+  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
+  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
+  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
+  ASSERT_EQ(pattern, syntax_case.pattern);
+  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_NO_THROW(syntax_case.generate());
+
+  NodePtr valid_expr = list(
+      c(Symbol("simple")),
+      c(Symbol("b"))
+  );
+
+  ASSERT_TRUE(syntax_case.match(valid_expr));
+  ASSERT_NO_THROW(syntax_case.expand(valid_expr));
+
+  ASSERT_EQ(car(valid_expr)->get<Symbol>(), Symbol("quote"));
+  ASSERT_EQ(car(cdr(valid_expr))->get<Symbol>(), Symbol("b"));
+}
+

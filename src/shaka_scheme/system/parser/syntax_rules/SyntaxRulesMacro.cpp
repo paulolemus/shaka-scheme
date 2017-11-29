@@ -13,7 +13,8 @@ SyntaxRulesMacro::SyntaxRulesMacro(
 bool SyntaxRulesMacro::expand(NodePtr macro) {
 
   for(auto& syntax_case : syntax_cases) {
-    if(syntax_case->expand(macro)) {
+    if(syntax_case->match(macro)) {
+      syntax_case->expand(macro);
       return true;
     }
   }

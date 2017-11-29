@@ -126,7 +126,7 @@ bool is_primitive_let_syntax(Symbol symbol, MacroContext& context) {
   return false;
 };
 
-// TODO: LOOK TO THIS FUNCTION FOR A DEMONTRATION ON EXPANDING A LIST
+// TODO: LOOK TO THIS FUNCTION FOR A DEMONSTRATION ON EXPANDING A LIST
 // Ex: (define (foo f) (+ f 1)) -> (define foo (lambda (f) (+ f 1))
 bool process_define_form(NodePtr& it, MacroContext& context) {
   if (!is_primitive_define(core::car(it)->get<Symbol>(), context)) {

@@ -10,6 +10,7 @@
 
 #include <functional>
 #include <memory>
+#include <map>
 #include <set>
 #include <vector>
 
@@ -22,17 +23,27 @@ namespace macro {
  */
 using SyntaxRule = std::function<bool()>;
 
+/**
+ * @brief Context that contains information on bindings and scope.
+ *        Used during expansion time to expand case hygienically.
+ */
+struct MacroContext;
 
 /**
  * @brief The class used for matching to and expanding a single <syntax-rule>,
- * with:
- * <syntax-rule> ::= (<patter> <template>)
+ *        with:
+ *        <syntax-rule> ::= (<patter> <template>)
+ *        
+ *        How it works:
+ *        1. generate() is called. This generates the internal function that
+ *           matches and extracts binding information from a macro use.
+ *        2. match(NodePtr macro) is called. This 
  */
 struct SyntaxCase {
 
   /**
    * @brief Create SyntaxCase will everything it needs to match a NodePtr
-   * to a pattern.
+   *        to a pattern.
    * @param macro_keyword The identifier used to represent a macro <keyword>.
    * @param ellipsis Ellipsis identifier <ellipsis>.
    * @param literal_ids Set of special IDs to look during matching.
@@ -57,30 +68,38 @@ struct SyntaxCase {
   void generate();
 
   /**
-   * @brief Match a macro to this SyntaxCase's pattern.
+   * @brief Match a macro to this SyntaxCase's pattern. On a successful match,
+   *        an internal state is set to allow for the expansion of the macro.
    * @param macro The NodePtr to the start of the macro use.
    * @return True if matching, false otherwise.
-   * TODO: This is used mainly for testing purposes, consider removing.
    */
   bool match(NodePtr macro);
 
   /**
-   * @brief Match and then expand a macro use. This function only expands the
-   * macro if it was a match. On a failure, it does nothing. Note that this
-   * function begins a match assuming the NodePtr points to the node *after*
-   * the macro keyword at the start of the expression.
-   * TODO: INTEGRATE WITH MacroContext
+   * @brief Expand a macro use. On a failure, it does nothing. Note that
+   *        this function begins a match assuming the NodePtr points to the
+   *        start of the macro.
+   *        TODO: INTEGRATE WITH MacroContext
    * @param macro NodePtr to the Node *after* the macro keyword.
    * @return true on success, false on failure.
+   * TODO: Pass this a reference to the Context.
    */
-  bool expand(NodePtr macro);
+  void expand(NodePtr macro);
 
+  /**
+   * @brief Used internally during the expansion of a identifier in the
+   * template.
+   * @param curr The Data node with the current ientifier
+   * @param next The rest of the list (cdr).
+   * @return NodePtr of new expanded segment.
+   */
+  NodePtr transform_identifier(NodePtr curr, NodePtr next);
 
   /**
    * @brief The function that is generated to match and expand a macro.
    * Default state is as function that simply returns false.
    */
-  SyntaxRule expand_macro = []() -> bool {
+  SyntaxRule parse_macro_use = []() -> bool {
     return false;
   };
 
@@ -120,6 +139,13 @@ struct SyntaxCase {
    * @brief Used for matching.
    */
   NodePtr it;
+
+  /**
+   * @brief used for transformation of macro use. Internal use.
+   *        This keeps track of what to replace a pattern identifier with from
+   *        the macro use.
+   */
+  std::map<Symbol, std::vector<NodePtr>> transform_bindings;
 
   /**
    * @brief The unique scope to this particular syntax case.

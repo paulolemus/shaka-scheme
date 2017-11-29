@@ -14,6 +14,13 @@ namespace macro {
 
 
 /**
+ * @brief Context used by macro to hygienically expand a macro use
+ *        before reaching the compiler.
+ */
+class MacroContext;
+
+
+/**
  * @brief The type of a syntax-rules macro.
  *
  * It stores its pattern-matching and substitution functionality for one
