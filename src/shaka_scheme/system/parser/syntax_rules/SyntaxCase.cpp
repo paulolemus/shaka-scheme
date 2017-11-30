@@ -254,6 +254,24 @@ bool SyntaxCase::match(NodePtr macro) {
  * Assistive function
  * Macro transformation and expansion
  */
+NodePtr copy_list(NodePtr root) {
+
+  NodePtr built_list = core::list();
+  NodePtr it;
+
+  while(!core::is_null_list(root)) {
+    it = core::car(root);
+    root = core::cdr(root);
+
+    built_list = core::append(
+        built_list,
+        create_node(*it)
+    );
+  }
+
+  return built_list;
+}
+
 NodePtr SyntaxCase::transform_identifier(
     NodePtr curr,
     NodePtr next
@@ -290,7 +308,7 @@ NodePtr SyntaxCase::transform_identifier(
 
       NodePtr sub_segment = core::list();
 
-      if(node->get_type() == Data::Type::SYMBOL) {
+      if(core::is_symbol(node)) {
         sub_segment = core::append(
             sub_segment,
             c(Symbol(node->get<Symbol>().get_value()))
@@ -302,26 +320,29 @@ NodePtr SyntaxCase::transform_identifier(
             c(PrimitiveFormMarker(node->get<PrimitiveFormMarker>().get()))
         );
 
-      } else if(node->get_type() == Data::Type::STRING) {
+      } else if(core::is_string(node)) {
         sub_segment = core::append(
             sub_segment,
             c(String(node->get<String>().get_string()))
         );
 
-      } else if(node->get_type() == Data::Type::BOOLEAN) {
+      } else if(core::is_boolean(node)) {
         sub_segment = core::append(
             sub_segment,
             c(Boolean(node->get<Boolean>().get_value()))
         );
 
-      } else if(node->get_type() == Data::Type::NULL_LIST) {
+      } else if(core::is_null_list(node)) {
         sub_segment = core::append(
             sub_segment,
             core::list(core::list())
         );
 
-      } else if(node->get_type() == Data::Type::DATA_PAIR) {
-        // TODO!!
+      } else if(core::is_pair(node)) {
+        sub_segment = core::append(
+            sub_segment,
+            core::list(copy_list(node))
+        );
 
       } else {
         throw MacroExpansionException(

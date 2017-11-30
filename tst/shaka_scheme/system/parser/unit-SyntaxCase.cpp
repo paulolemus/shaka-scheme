@@ -477,7 +477,13 @@ TEST(SyntaxCaseUnitTest, expand_simple_macro) {
   );
 
   ASSERT_TRUE(syntax_case.match(valid_expr));
-  ASSERT_NO_THROW(syntax_case.expand(valid_expr));
+  //ASSERT_NO_THROW(syntax_case.expand(valid_expr));
+  try {
+    syntax_case.expand(valid_expr);
+  } catch(const std::exception& e) {
+    std::cerr << e.what() << std::endl;
+    FAIL();
+  }
 
   ASSERT_EQ(car(valid_expr)->get<Symbol>(), Symbol("quote"));
   ASSERT_EQ(car(cdr(valid_expr))->get<Symbol>(), Symbol("b"));
