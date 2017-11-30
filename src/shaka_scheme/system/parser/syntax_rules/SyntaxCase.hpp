@@ -21,7 +21,7 @@ namespace macro {
 /**
  * @brief Type used for generating and saving pattern matchers.
  */
-using SyntaxRule = std::function<bool()>;
+using SyntaxRule = std::function<bool(NodePtr&)>;
 
 /**
  * @brief Context that contains information on bindings and scope.
@@ -126,7 +126,14 @@ private:
    * @param root Node at the start of a valid list.
    * @return A function that matches to a pattern in a list.
    */
-  SyntaxRule list_generator(NodePtr root);
+  SyntaxRule list_generator(NodePtr it);
+
+  /**
+   * @brief Used to expand any list contained in the template.
+   * @param it The start of the list to expand.
+   * @return A ptr to the newly created expanded form.
+   */
+  NodePtr list_expander(NodePtr it);
 
   /**
    * @brief Used internally during the expansion of a identifier in the
@@ -142,7 +149,7 @@ private:
    * @brief The function that is generated to match and expand a macro.
    * Default state is as function that simply returns false.
    */
-  SyntaxRule parse_macro_use = []() -> bool {
+  SyntaxRule parse_macro_use = [](NodePtr& it) -> bool {
     return false;
   };
 

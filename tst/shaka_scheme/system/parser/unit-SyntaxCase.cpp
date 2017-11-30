@@ -461,17 +461,17 @@ TEST(SyntaxCaseUnitTest, expand_simple_macro) {
       )
   );
 
-  std::cout << *valid_expr << std::endl;
+  std::cout << "BEFORE: " << *valid_expr << std::endl;
   ASSERT_TRUE(syntax_case.match(valid_expr));
   ASSERT_NO_THROW(syntax_case.expand(valid_expr));
-  std::cout << *valid_expr << std::endl;
+  std::cout << "AFTER: " << *valid_expr << std::endl;
   ASSERT_EQ(car(valid_expr)->get<Symbol>(), Symbol("quote"));
   ASSERT_EQ(car(cdr(valid_expr))->get<Symbol>(), Symbol("b"));
 
-  std::cout << *valid_expr2 << std::endl;
+  std::cout << "BEFORE: " << *valid_expr2 << std::endl;
   ASSERT_TRUE(syntax_case.match(valid_expr2));
   ASSERT_NO_THROW(syntax_case.expand(valid_expr2));
-  std::cout << *valid_expr2 << std::endl;
+  std::cout << "AFTER: " << *valid_expr2 << std::endl;
   ASSERT_EQ(car(valid_expr2)->get<Symbol>(), Symbol("quote"));
   ASSERT_TRUE(is_proper_list(cdr(valid_expr2)));
 }
@@ -542,16 +542,35 @@ TEST(SyntaxCaseUnitTest, expand_let_macro) {
               c(Symbol("a"))
           )
       ),
-      //list(
-      //    c(Symbol("quote")),
-      //    c(Symbol("x"))
-      //)
-      c(Symbol("testing")),
-      c(Symbol("second"))
+      list(
+          c(Symbol("quote")),
+          c(Symbol("x"))
+      )
   );
 
-  std::cout << *valid_expr << std::endl;
+  NodePtr valid_expr2 = list(
+    c(Symbol("let")),
+    list(
+        list(c(Symbol("a")), c(Symbol("x"))),
+        list(c(Symbol("b")), c(Symbol("y"))),
+        list(c(Symbol("c")), c(Symbol("z")))
+    ),
+    list(
+        c(Symbol("list")),
+        c(Symbol("a")),
+        c(Symbol("b")),
+        c(Symbol("c"))
+    )
+  );
+
+  std::cout << "BEFORE: " << *valid_expr << std::endl;
   ASSERT_TRUE(syntax_case.match(valid_expr));
   ASSERT_NO_THROW(syntax_case.expand(valid_expr));
-  std::cout << *valid_expr << std::endl;
+  std::cout << "AFTER: " << *valid_expr << std::endl;
+
+  std::cout << "BEFORE: " << *valid_expr2 << std::endl;
+  ASSERT_TRUE(syntax_case.match(valid_expr2));
+  ASSERT_NO_THROW(syntax_case.expand(valid_expr2));
+  std::cout << "AFTER: " << *valid_expr2 << std::endl;
+
 }

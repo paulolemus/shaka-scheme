@@ -72,28 +72,20 @@ std::ostream& operator<<(
  * @return true for a match, false otherwise.
  */
 SyntaxRule create_rule_keyword(
-    SyntaxCase* syntax_case,
     const Symbol& keyword
 ) {
-  std::cout << "Building keyword rule for " << keyword.get_value() << std::endl;
-
-  return [=]() -> bool {
-    std::cout << "keyword rule " << keyword.get_value() << " ";
+  return [=](NodePtr& it) -> bool {
     // Save pointer
-    const NodePtr key = core::car(syntax_case->it);
-    std::cout << *key << " ";
+    const NodePtr key = core::car(it);
 
     if(!core::is_symbol(key)) {
-      std::cout << "0" << std::endl;
       return false;
     }
 
     if(keyword == key->get<Symbol>()) {
-      syntax_case->it = core::cdr(syntax_case->it);
-      std::cout << "1" << std::endl;
+      it = core::cdr(it);
       return true;
     } else {
-      std::cout << "0" << std::endl;
       return false;
     }
   };
@@ -106,25 +98,19 @@ SyntaxRule create_rule_keyword(
  */
 SyntaxRule create_rule_identifier(
     SyntaxCase* syntax_case,
-    Symbol symbol
+    const Symbol& symbol
 ) {
-  std::cout << "Building identifier rule for " << symbol.get_value() <<
-                                                                    std::endl;
-  return [=]() -> bool {
-    std::cout << "identifier rule " << symbol.get_value() << " ";
-    std::cout << *syntax_case->it << " ";
+  return [=](NodePtr& it) -> bool {
 
     // Guard against null list
-    if(core::is_null_list(syntax_case->it)) {
-      std::cout << "0" << std::endl;
+    if(core::is_null_list(it)) {
       return false;
     }
     // Guard against invalid identifier types.
-    if(!core::is_symbol(syntax_case->it)      &&
-       !core::is_proper_list(syntax_case->it) &&
-       !core::is_boolean(syntax_case->it)     &&
-       !core::is_string(syntax_case->it)) {
-      std::cout << "0" << std::endl;
+    if(!core::is_symbol(it)      &&
+       !core::is_proper_list(it) &&
+       !core::is_boolean(it)     &&
+       !core::is_string(it)) {
       return false;
     }
 
@@ -132,15 +118,14 @@ SyntaxRule create_rule_identifier(
     if(syntax_case->transform_bindings.count(symbol) < 1) {
       // No bindings currently exist, so add a new vector
       syntax_case->transform_bindings[symbol] =
-          std::vector<NodePtr>{syntax_case->it};
+          std::vector<NodePtr>{core::car(it)};
     } else {
       // A binding exists, push back on vector
-      syntax_case->transform_bindings[symbol].push_back(syntax_case->it);
+      syntax_case->transform_bindings[symbol].push_back(core::car(it));
     }
 
     // Move the iterator up for any other matching functions that may be called.
-    syntax_case->it = core::cdr(syntax_case->it);
-    std::cout << "1" << std::endl;
+    it = core::cdr(it);
     return true;
   };
 }
@@ -153,29 +138,35 @@ SyntaxRule create_rule_identifier(
  * otherwise.
  */
 SyntaxRule create_rule_kleene_plus(
-    SyntaxRule rule
+    SyntaxRule& rule
 ) {
-  std::cout << "Building kleene rule" << std::endl;
-  return [=]() -> bool {
-    bool found_one = rule();
+  return [=](NodePtr& it) -> bool {
+    bool found_one = rule(it);
 
     if(found_one) {
-      while(rule());
+      while(rule(it));
     }
-    std::cout << "kleene rule: " << found_one << std::endl;
     return found_one;
   };
 }
 
-SyntaxRule create_rule_null_list(
-    SyntaxCase* syntax_case
+SyntaxRule create_rule_null_list() {
+
+  return [=](NodePtr& it) -> bool {
+    return core::is_null_list(it);
+  };
+}
+
+SyntaxRule create_list_rule(
+    SyntaxRule rule
 ) {
-  std::cout << "Building null list rule" << std::endl;
-  return [=]() -> bool {
-    std::cout << "null rule ";
-    bool capture = core::is_null_list(syntax_case->it);
-    std::cout << capture << std::endl;
-    return capture;
+  return [=](NodePtr& it) -> bool {
+    if(core::is_null_list(it)) {
+      return false;
+    }
+    NodePtr sub_it = core::car(it);
+    it = core::cdr(it);
+    return rule(sub_it);
   };
 }
 
@@ -183,11 +174,8 @@ SyntaxRule combine_rule_or(
     SyntaxRule lhs,
     SyntaxRule rhs
 ) {
-  std::cout << "Building rule or" << std::endl;
-  return [=]() -> bool {
-    bool capture = lhs() || rhs();
-    std::cout << "or rule: " << capture << std::endl;
-    return capture;
+  return [=](NodePtr& it) -> bool {
+    return lhs(it) || rhs(it);
   };
 }
 
@@ -195,11 +183,8 @@ SyntaxRule combine_rule_and(
     SyntaxRule lhs,
     SyntaxRule rhs
 ) {
-  std::cout << "Building rule and" << std::endl;
-  return [=]() -> bool {
-    bool capture = lhs() && rhs();
-    std::cout << "and rule " << capture << std::endl;
-    return capture;
+  return [=](NodePtr& it) -> bool {
+    return lhs(it) && rhs(it);
   };
 }
 
@@ -219,7 +204,7 @@ SyntaxRule operator&(
 
 SyntaxRule SyntaxCase::list_generator(NodePtr root) {
 
-  SyntaxRule matcher = [=]() -> bool { return true; };
+  SyntaxRule matcher = [=](NodePtr& it) -> bool { return true; };
   NodePtr it = root;
   NodePtr curr;
   NodePtr next;
@@ -237,8 +222,6 @@ SyntaxRule SyntaxCase::list_generator(NodePtr root) {
       it = core::cdr(it);
       next = it;
 
-      std::cout << "in generate: " << *curr << std::endl;
-
       // Use one look ahead token to check for ellipsis.
       if(!core::is_null_list(next)) {
         next = core::car(next);
@@ -249,7 +232,7 @@ SyntaxRule SyntaxCase::list_generator(NodePtr root) {
       case Data::Type::SYMBOL:
         // Generate rule for either a literal id or a pattern variable.
         if(literal_ids.count(curr->get<Symbol>()) > 0) {
-          new_rule = create_rule_keyword(this, curr->get<Symbol>());
+          new_rule = create_rule_keyword(curr->get<Symbol>());
         } else {
           new_rule = create_rule_identifier(this, curr->get<Symbol>());
         }
@@ -257,7 +240,7 @@ SyntaxRule SyntaxCase::list_generator(NodePtr root) {
 
       case Data::Type::DATA_PAIR:
         // Recursively call this function to parse the sub list.
-        new_rule = list_generator(curr);
+        new_rule = create_list_rule(list_generator(curr));
         break;
 
       case Data::Type::NUMBER:
@@ -284,7 +267,7 @@ SyntaxRule SyntaxCase::list_generator(NodePtr root) {
     }
 
     // Add null list to signify end of match
-    matcher = matcher & create_rule_null_list(this);
+    matcher = matcher & create_rule_null_list();
 
   } catch(const MacroExpansionException& e) {
     throw e;
@@ -322,8 +305,8 @@ void SyntaxCase::generate() {
 
   // Create initial rule to match macro name.
   SyntaxRule matcher =
-      create_rule_keyword(this, macro_keyword) |
-      create_rule_keyword(this, Symbol("_"));
+      create_rule_keyword(macro_keyword) |
+      create_rule_keyword(Symbol("_"));
 
   // Build rule for the rest of the pattern and "and then" it with the
   // initial rule.
@@ -352,7 +335,7 @@ NodePtr copy_list(NodePtr root) {
 
     built_list = core::append(
         built_list,
-        create_node(*it)
+        core::list(create_node(*it))
     );
   }
 
@@ -365,6 +348,7 @@ NodePtr SyntaxCase::transform_identifier(
     NodePtr next
 ) {
   const auto& c = create_node;
+  using core::list;
 
   NodePtr segment = core::list();
   auto map_iter = transform_bindings.find(curr->get<Symbol>());
@@ -399,25 +383,25 @@ NodePtr SyntaxCase::transform_identifier(
       if(core::is_symbol(node)) {
         sub_segment = core::append(
             sub_segment,
-            c(Symbol(node->get<Symbol>().get_value()))
+            list(c(Symbol(node->get<Symbol>().get_value())))
         );
 
       } else if(node->get_type() == Data::Type::PRIMITIVE_FORM) {
         sub_segment = core::append(
             sub_segment,
-            c(PrimitiveFormMarker(node->get<PrimitiveFormMarker>().get()))
+            list(c(PrimitiveFormMarker(node->get<PrimitiveFormMarker>().get())))
         );
 
       } else if(core::is_string(node)) {
         sub_segment = core::append(
             sub_segment,
-            c(String(node->get<String>().get_string()))
+            list(c(String(node->get<String>().get_string())))
         );
 
       } else if(core::is_boolean(node)) {
         sub_segment = core::append(
             sub_segment,
-            c(Boolean(node->get<Boolean>().get_value()))
+            list(c(Boolean(node->get<Boolean>().get_value())))
         );
 
       } else if(core::is_null_list(node)) {
@@ -429,7 +413,7 @@ NodePtr SyntaxCase::transform_identifier(
       } else if(core::is_pair(node)) {
         sub_segment = core::append(
             sub_segment,
-            core::list(copy_list(node))
+            list(copy_list(node))
         );
 
       } else {
@@ -455,13 +439,16 @@ NodePtr SyntaxCase::transform_identifier(
 }
 
 
-void SyntaxCase::expand(NodePtr macro) {
+NodePtr SyntaxCase::list_expander(NodePtr it) {
+  using core::append;
+  using core::list;
+  using core::car;
+  using core::cdr;
   const auto& c = shaka::create_node;
 
-  NodePtr expanded_form = core::list();
+  NodePtr expanded_form = list();
   NodePtr expanded_it = expanded_form;
-  NodePtr curr = templat;
-  it = templat;
+  NodePtr curr = it;
   NodePtr segment;
 
   // Iterate through the template, until the end is reached.
@@ -470,8 +457,13 @@ void SyntaxCase::expand(NodePtr macro) {
   while(it->get_type() != Data::Type::NULL_LIST) {
 
     // Iterate one s-expression
-    curr = core::car(it);
-    it = core::cdr(it);
+    curr = car(it);
+    it = cdr(it);
+
+    // Skip past any ellipse, as they are handled in each function.
+    if(core::is_symbol(curr) && curr->get<Symbol>() == ellipsis) {
+      continue;
+    }
 
     // The expression of curr needs to be evaluated differently depending on
     // the type of the list.
@@ -483,20 +475,26 @@ void SyntaxCase::expand(NodePtr macro) {
       break;
 
     case Data::Type::PRIMITIVE_FORM:
-      segment = core::list(
+      segment = list(
           c(PrimitiveFormMarker(curr->get<PrimitiveFormMarker>().get()))
       );
       break;
 
     case Data::Type::BOOLEAN:
-      segment = core::list(c(Boolean(curr->get<Boolean>().get_value())));
+      segment = list(c(Boolean(curr->get<Boolean>().get_value())));
       break;
 
     case Data::Type::STRING:
-      segment = core::list(c(String(curr->get<String>().get_string())));
+      segment = list(c(String(curr->get<String>().get_string())));
+      break;
+
+    case Data::Type::DATA_PAIR:
+    std::cout << "ENTERED DATA PAIR PART" << std::endl;
+      segment = list(list_expander(curr));
       break;
 
     default:
+    std::cout << "ENTERED DEFAULT FOR THING" << std::endl;
       throw MacroExpansionException(
           60001,
           "NodePtr type is not implemented for macro expansion"
@@ -504,13 +502,26 @@ void SyntaxCase::expand(NodePtr macro) {
     }
 
     // Append to expanded_form
-    expanded_form = core::append(expanded_form, segment);
+    expanded_form = append(expanded_form, segment);
   }
+
+  return expanded_form;
+}
+
+
+void SyntaxCase::expand(NodePtr macro) {
+  using core::append;
+  using core::list;
+  using core::car;
+  using core::cdr;
+
+  NodePtr expanded_form = list();
+  expanded_form = append(expanded_form, list_expander(templat));
 
   // After expansion is finished, replace the car and cons of the macro with
   // the expanded form. Then clear the bindings for the next usage.
-  core::set_car(macro, core::car(expanded_form));
-  core::set_cdr(macro, core::cdr(expanded_form));
+  core::set_car(macro, car(expanded_form));
+  core::set_cdr(macro, cdr(expanded_form));
   transform_bindings.clear();
 }
 
