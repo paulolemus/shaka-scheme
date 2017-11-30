@@ -37,11 +37,11 @@ TEST(SyntaxCaseUnitTest, constructor) {
 
   std::cout << syntax_case << std::endl;
 
-  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
-  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
-  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
-  ASSERT_EQ(pattern, syntax_case.pattern);
-  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_EQ(macro_keyword, syntax_case.get_macro_keyword());
+  ASSERT_EQ(ellipsis, syntax_case.get_ellipsis());
+  ASSERT_EQ(literal_ids, syntax_case.get_literal_ids());
+  ASSERT_EQ(pattern, syntax_case.get_pattern());
+  ASSERT_EQ(templat, syntax_case.get_templat());
 }
 
 /**
@@ -86,11 +86,11 @@ TEST(SyntaxCaseUnitTest, construction_with_complexion) {
 
   std::cout << syntax_case << std::endl;
 
-  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
-  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
-  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
-  ASSERT_EQ(pattern, syntax_case.pattern);
-  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_EQ(macro_keyword, syntax_case.get_macro_keyword());
+  ASSERT_EQ(ellipsis, syntax_case.get_ellipsis());
+  ASSERT_EQ(literal_ids, syntax_case.get_literal_ids());
+  ASSERT_EQ(pattern, syntax_case.get_pattern());
+  ASSERT_EQ(templat, syntax_case.get_templat());
 }
 
 /**
@@ -120,11 +120,11 @@ TEST(SyntaxCaseUnitTest, generate_simple) {
 
   std::cout << syntax_case << std::endl;
 
-  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
-  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
-  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
-  ASSERT_EQ(pattern, syntax_case.pattern);
-  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_EQ(macro_keyword, syntax_case.get_macro_keyword());
+  ASSERT_EQ(ellipsis, syntax_case.get_ellipsis());
+  ASSERT_EQ(literal_ids, syntax_case.get_literal_ids());
+  ASSERT_EQ(pattern, syntax_case.get_pattern());
+  ASSERT_EQ(templat, syntax_case.get_templat());
   ASSERT_NO_THROW(syntax_case.generate());
 }
 
@@ -154,11 +154,11 @@ TEST(SyntaxCaseUnitTest, generate_exception) {
 
   std::cout << syntax_case << std::endl;
 
-  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
-  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
-  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
-  ASSERT_EQ(pattern, syntax_case.pattern);
-  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_EQ(macro_keyword, syntax_case.get_macro_keyword());
+  ASSERT_EQ(ellipsis, syntax_case.get_ellipsis());
+  ASSERT_EQ(literal_ids, syntax_case.get_literal_ids());
+  ASSERT_EQ(pattern, syntax_case.get_pattern());
+  ASSERT_EQ(templat, syntax_case.get_templat());
   ASSERT_THROW(syntax_case.generate(), MacroExpansionException);
 }
 
@@ -189,11 +189,11 @@ TEST(SyntaxCaseUnitTest, match_simples) {
 
   std::cout << syntax_case << std::endl;
 
-  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
-  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
-  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
-  ASSERT_EQ(pattern, syntax_case.pattern);
-  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_EQ(macro_keyword, syntax_case.get_macro_keyword());
+  ASSERT_EQ(ellipsis, syntax_case.get_ellipsis());
+  ASSERT_EQ(literal_ids, syntax_case.get_literal_ids());
+  ASSERT_EQ(pattern, syntax_case.get_pattern());
+  ASSERT_EQ(templat, syntax_case.get_templat());
   try {
     syntax_case.generate();
   } catch(const std::exception& e) {
@@ -243,11 +243,11 @@ TEST(SyntaxCaseUnitTest, match_simples_fail) {
   );
   std::cout << syntax_case << std::endl;
 
-  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
-  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
-  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
-  ASSERT_EQ(pattern, syntax_case.pattern);
-  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_EQ(macro_keyword, syntax_case.get_macro_keyword());
+  ASSERT_EQ(ellipsis, syntax_case.get_ellipsis());
+  ASSERT_EQ(literal_ids, syntax_case.get_literal_ids());
+  ASSERT_EQ(pattern, syntax_case.get_pattern());
+  ASSERT_EQ(templat, syntax_case.get_templat());
   ASSERT_NO_THROW(syntax_case.generate());
 
   NodePtr valid_expr1 = list(c(Symbol("test")));
@@ -300,11 +300,11 @@ TEST(SyntaxCaseUnitTest, match_with_ellipsis) {
   );
   std::cout << syntax_case << std::endl;
 
-  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
-  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
-  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
-  ASSERT_EQ(pattern, syntax_case.pattern);
-  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_EQ(macro_keyword, syntax_case.get_macro_keyword());
+  ASSERT_EQ(ellipsis, syntax_case.get_ellipsis());
+  ASSERT_EQ(literal_ids, syntax_case.get_literal_ids());
+  ASSERT_EQ(pattern, syntax_case.get_pattern());
+  ASSERT_EQ(templat, syntax_case.get_templat());
   ASSERT_NO_THROW(syntax_case.generate());
 
   NodePtr valid_expr1 = list(
@@ -334,20 +334,9 @@ TEST(SyntaxCaseUnitTest, match_with_ellipsis) {
   ASSERT_FALSE(syntax_case.match(invalid_expr1));
 }
 
-TEST(SyntaxCaseUnitTest, match_with_macro) {
-  const auto& c = create_node;
-
-  /*
-   * Macro definition:
-   * (define-syntax reduce
-   *   (syntax-case ()
-   *     [(reduce a b c) ()]
-   */
-}
 
 /**
  * @brief Can I match to a macro use with literal ids?
- * TODO: FINISH THIS TESTCASE
  */
 TEST(SyntaxCaseUnitTest, match_with_literal_ids) {
   const auto& c = create_node;
@@ -384,11 +373,11 @@ TEST(SyntaxCaseUnitTest, match_with_literal_ids) {
   );
   std::cout << syntax_case << std::endl;
 
-  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
-  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
-  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
-  ASSERT_EQ(pattern, syntax_case.pattern);
-  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_EQ(macro_keyword, syntax_case.get_macro_keyword());
+  ASSERT_EQ(ellipsis, syntax_case.get_ellipsis());
+  ASSERT_EQ(literal_ids, syntax_case.get_literal_ids());
+  ASSERT_EQ(pattern, syntax_case.get_pattern());
+  ASSERT_EQ(templat, syntax_case.get_templat());
   ASSERT_NO_THROW(syntax_case.generate());
 
   NodePtr valid_expr1 = list(
@@ -444,15 +433,90 @@ TEST(SyntaxCaseUnitTest, expand_simple_macro) {
   );
   std::size_t scope = 3;
 
-  // TESTING
-  NodePtr lst = list();
-  std::cout << *lst << std::endl;
-  lst = append(lst, list(list()));
-  std::cout << *lst << std::endl;
-  // lst = append(lst, list(c(Symbol("first")), c(Symbol("second"))));
-  // std::cout << *lst << std::endl;
-  // lst = append(lst, list(c(Symbol("first")), c(Symbol("second"))));
-  // std::cout << *lst << std::endl;
+  SyntaxCase syntax_case(
+      macro_keyword,
+      ellipsis,
+      literal_ids,
+      pattern,
+      templat,
+      scope
+  );
+
+  ASSERT_EQ(macro_keyword, syntax_case.get_macro_keyword());
+  ASSERT_EQ(ellipsis, syntax_case.get_ellipsis());
+  ASSERT_EQ(literal_ids, syntax_case.get_literal_ids());
+  ASSERT_EQ(pattern, syntax_case.get_pattern());
+  ASSERT_EQ(templat, syntax_case.get_templat());
+  ASSERT_NO_THROW(syntax_case.generate());
+
+  NodePtr valid_expr = list(
+      c(Symbol("simple")),
+      c(Symbol("b"))
+  );
+  NodePtr valid_expr2 = list(
+      c(Symbol("simple")),
+      list(
+          c(Symbol("hello")),
+          c(Symbol("world"))
+      )
+  );
+
+  std::cout << *valid_expr << std::endl;
+  ASSERT_TRUE(syntax_case.match(valid_expr));
+  ASSERT_NO_THROW(syntax_case.expand(valid_expr));
+  std::cout << *valid_expr << std::endl;
+  ASSERT_EQ(car(valid_expr)->get<Symbol>(), Symbol("quote"));
+  ASSERT_EQ(car(cdr(valid_expr))->get<Symbol>(), Symbol("b"));
+
+  std::cout << *valid_expr2 << std::endl;
+  ASSERT_TRUE(syntax_case.match(valid_expr2));
+  ASSERT_NO_THROW(syntax_case.expand(valid_expr2));
+  std::cout << *valid_expr2 << std::endl;
+  ASSERT_EQ(car(valid_expr2)->get<Symbol>(), Symbol("quote"));
+  ASSERT_TRUE(is_proper_list(cdr(valid_expr2)));
+}
+
+
+/**
+ * @brief After matching, can I expand the let macro?
+ */
+TEST(SyntaxCaseUnitTest, expand_let_macro) {
+  const auto& c = create_node;
+
+  // Macro:
+  // (define-syntax let
+  //   (syntax-rules ()
+  //     [(let ((name val) ...) body1 ...)
+  //      ((lambda (name ...) body1 ...) val ...)]))
+  Symbol macro_keyword("let");
+  Symbol ellipsis("...");
+  std::set<Symbol> literal_ids;
+  NodePtr pattern = list(
+      c(Symbol("let")),
+      list(
+          list(
+              c(Symbol("name")),
+              c(Symbol("val"))
+          ),
+          c(Symbol("..."))
+      ),
+      c(Symbol("body")),
+      c(Symbol("..."))
+  );
+  NodePtr templat = list(
+      list(
+          c(Symbol("lambda")),
+          list(
+              c(Symbol("name")),
+              c(Symbol("..."))
+          ),
+          c(Symbol("body")),
+          c(Symbol("..."))
+      ),
+      c(Symbol("val")),
+      c(Symbol("..."))
+  );
+  std::size_t scope = 3;
 
   SyntaxCase syntax_case(
       macro_keyword,
@@ -462,30 +526,32 @@ TEST(SyntaxCaseUnitTest, expand_simple_macro) {
       templat,
       scope
   );
-  std::cout << syntax_case << std::endl;
 
-  ASSERT_EQ(macro_keyword, syntax_case.macro_keyword);
-  ASSERT_EQ(ellipsis, syntax_case.ellipsis);
-  ASSERT_EQ(literal_ids, syntax_case.literal_ids);
-  ASSERT_EQ(pattern, syntax_case.pattern);
-  ASSERT_EQ(templat, syntax_case.templat);
+  ASSERT_EQ(macro_keyword, syntax_case.get_macro_keyword());
+  ASSERT_EQ(ellipsis, syntax_case.get_ellipsis());
+  ASSERT_EQ(literal_ids, syntax_case.get_literal_ids());
+  ASSERT_EQ(pattern, syntax_case.get_pattern());
+  ASSERT_EQ(templat, syntax_case.get_templat());
   ASSERT_NO_THROW(syntax_case.generate());
 
   NodePtr valid_expr = list(
-      c(Symbol("simple")),
-      c(Symbol("b"))
+      c(Symbol("let")),
+      list(
+          list(
+              c(Symbol("x")),
+              c(Symbol("a"))
+          )
+      ),
+      //list(
+      //    c(Symbol("quote")),
+      //    c(Symbol("x"))
+      //)
+      c(Symbol("testing")),
+      c(Symbol("second"))
   );
 
+  std::cout << *valid_expr << std::endl;
   ASSERT_TRUE(syntax_case.match(valid_expr));
-  //ASSERT_NO_THROW(syntax_case.expand(valid_expr));
-  try {
-    syntax_case.expand(valid_expr);
-  } catch(const std::exception& e) {
-    std::cerr << e.what() << std::endl;
-    FAIL();
-  }
-
-  ASSERT_EQ(car(valid_expr)->get<Symbol>(), Symbol("quote"));
-  ASSERT_EQ(car(cdr(valid_expr))->get<Symbol>(), Symbol("b"));
+  ASSERT_NO_THROW(syntax_case.expand(valid_expr));
+  std::cout << *valid_expr << std::endl;
 }
-

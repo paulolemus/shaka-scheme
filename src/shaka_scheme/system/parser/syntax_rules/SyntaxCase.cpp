@@ -22,6 +22,26 @@ SyntaxCase::SyntaxCase(
   this->it = pattern;
 }
 
+const Symbol& SyntaxCase::get_macro_keyword() const {
+  return this->macro_keyword;
+}
+
+const Symbol& SyntaxCase::get_ellipsis() const {
+  return this->ellipsis;
+}
+
+const std::set<shaka::Symbol>& SyntaxCase::get_literal_ids() const {
+  return this->literal_ids;
+}
+
+const NodePtr& SyntaxCase::get_pattern() const {
+  return this->pattern;
+}
+
+const NodePtr& SyntaxCase::get_templat() const {
+  return this->templat;
+}
+
 
 std::ostream& operator<<(
     std::ostream& lhs,
@@ -42,76 +62,107 @@ std::ostream& operator<<(
 }
 
 /*
- * Assistive functions
- * Syntax Rule
+ * SyntaxRule assistive functions
  */
+
 /**
  * @brief Create a function that matches to a special keyword.
- * @param syntax_case
- * @param root
- * @return
+ * @param syntax_case Contains expression iterator of pattern.
+ * @param keyword The keyword to match to.
+ * @return true for a match, false otherwise.
  */
 SyntaxRule create_rule_keyword(
     SyntaxCase* syntax_case,
-    const Symbol keyword
+    const Symbol& keyword
 ) {
+  std::cout << "Building keyword rule for " << keyword.get_value() << std::endl;
+
   return [=]() -> bool {
+    std::cout << "keyword rule " << keyword.get_value() << " ";
     // Save pointer
     const NodePtr key = core::car(syntax_case->it);
+    std::cout << *key << " ";
 
     if(!core::is_symbol(key)) {
+      std::cout << "0" << std::endl;
       return false;
     }
 
     if(keyword == key->get<Symbol>()) {
       syntax_case->it = core::cdr(syntax_case->it);
+      std::cout << "1" << std::endl;
       return true;
     } else {
+      std::cout << "0" << std::endl;
       return false;
     }
-
   };
 }
 /**
  * @brief Create new general identifier
- * @param syntax_case_ptr
- * @return
+ * @param syntax_case Instance of the current SyntaxCase.
+ * @param symbol The pattern variable to bind to.
+ * @return lambda that returns true on match, false otherwise.
  */
 SyntaxRule create_rule_identifier(
-    SyntaxCase* syntax_case
+    SyntaxCase* syntax_case,
+    Symbol symbol
 ) {
+  std::cout << "Building identifier rule for " << symbol.get_value() <<
+                                                                    std::endl;
   return [=]() -> bool {
+    std::cout << "identifier rule " << symbol.get_value() << " ";
+    std::cout << *syntax_case->it << " ";
 
+    // Guard against null list
     if(core::is_null_list(syntax_case->it)) {
+      std::cout << "0" << std::endl;
+      return false;
+    }
+    // Guard against invalid identifier types.
+    if(!core::is_symbol(syntax_case->it)      &&
+       !core::is_proper_list(syntax_case->it) &&
+       !core::is_boolean(syntax_case->it)     &&
+       !core::is_string(syntax_case->it)) {
+      std::cout << "0" << std::endl;
       return false;
     }
 
-    // Identifier matches to almost anything
-    if(!core::is_symbol(syntax_case->it) &&
-        !core::is_proper_list(syntax_case->it) &&
-        !core::is_boolean(syntax_case->it) &&
-        !core::is_string(syntax_case->it)) {
-      return false;
+    // Add NodePtr to transformation bindings.
+    if(syntax_case->transform_bindings.count(symbol) < 1) {
+      // No bindings currently exist, so add a new vector
+      syntax_case->transform_bindings[symbol] =
+          std::vector<NodePtr>{syntax_case->it};
+    } else {
+      // A binding exists, push back on vector
+      syntax_case->transform_bindings[symbol].push_back(syntax_case->it);
     }
 
+    // Move the iterator up for any other matching functions that may be called.
     syntax_case->it = core::cdr(syntax_case->it);
+    std::cout << "1" << std::endl;
     return true;
   };
 }
+
+
 /**
  * @brief Rule needs to pass at least one time
- * @param syntax_case
- * @return
+ * @param rule The rule to check for success one or more times.
+ * @return lambda that returns true if rule matches one or more times, false
+ * otherwise.
  */
 SyntaxRule create_rule_kleene_plus(
     SyntaxRule rule
 ) {
+  std::cout << "Building kleene rule" << std::endl;
   return [=]() -> bool {
     bool found_one = rule();
 
     if(found_one) {
       while(rule());
     }
+    std::cout << "kleene rule: " << found_one << std::endl;
     return found_one;
   };
 }
@@ -119,8 +170,12 @@ SyntaxRule create_rule_kleene_plus(
 SyntaxRule create_rule_null_list(
     SyntaxCase* syntax_case
 ) {
+  std::cout << "Building null list rule" << std::endl;
   return [=]() -> bool {
-    return core::is_null_list(syntax_case->it);
+    std::cout << "null rule ";
+    bool capture = core::is_null_list(syntax_case->it);
+    std::cout << capture << std::endl;
+    return capture;
   };
 }
 
@@ -128,8 +183,11 @@ SyntaxRule combine_rule_or(
     SyntaxRule lhs,
     SyntaxRule rhs
 ) {
+  std::cout << "Building rule or" << std::endl;
   return [=]() -> bool {
-    return lhs() || rhs();
+    bool capture = lhs() || rhs();
+    std::cout << "or rule: " << capture << std::endl;
+    return capture;
   };
 }
 
@@ -137,8 +195,11 @@ SyntaxRule combine_rule_and(
     SyntaxRule lhs,
     SyntaxRule rhs
 ) {
+  std::cout << "Building rule and" << std::endl;
   return [=]() -> bool {
-    return lhs() && rhs();
+    bool capture = lhs() && rhs();
+    std::cout << "and rule " << capture << std::endl;
+    return capture;
   };
 }
 
@@ -146,10 +207,9 @@ SyntaxRule operator|(
     const SyntaxRule lhs,
     const SyntaxRule rhs
 ) {
-
   return combine_rule_or(lhs, rhs);
-
 }
+
 SyntaxRule operator&(
     const SyntaxRule lhs,
     const SyntaxRule rhs
@@ -157,79 +217,74 @@ SyntaxRule operator&(
   return combine_rule_and(lhs, rhs);
 }
 
+SyntaxRule SyntaxCase::list_generator(NodePtr root) {
 
-/**
- * @brief Replace the expand_macro function with a valid matcher function.
- */
-void SyntaxCase::generate() {
-  SyntaxRule built_expander;
-  it = pattern;
-  NodePtr curr = it;
-  NodePtr next = it;
+  SyntaxRule matcher = [=]() -> bool { return true; };
+  NodePtr it = root;
+  NodePtr curr;
+  NodePtr next;
 
   try {
 
-    std::cout << "Entering SyntaxCase generation:" << std::endl;
-    std::cout << *it << std::endl;
-
-    // Check for initial macro symbol or underscore.
-    curr = core::car(it);
-    if(!core::is_symbol(curr)) {
-      throw MacroExpansionException(
-          60002,
-          "No symbol at start of macro"
-      );
-    }
-    auto str = curr->get<Symbol>().get_value();
-    if(str != macro_keyword.get_value() && str != "_") {
-      throw MacroExpansionException(
-          60001,
-          "macro keyword or underscore not found"
-      );
-    }
-    // Create initial rule to match macro name.
-    built_expander =
-        create_rule_keyword(this, macro_keyword) |
-            create_rule_keyword(this, Symbol("_"));
-
-
-    // Loop through pattern building a expander.
-    it = core::cdr(it);
+    // Iterate through the pattern list. For each expression, generate a
+    // function that will match to that pattern, then use that generated
+    // pattern to build upon a single function that matches to the entire
+    // pattern.
     while(!core::is_null_list(it)) {
-      std::cout << *it << std::endl;
 
       SyntaxRule new_rule;
       curr = core::car(it);
       it = core::cdr(it);
       next = it;
 
+      std::cout << "in generate: " << *curr << std::endl;
+
+      // Use one look ahead token to check for ellipsis.
       if(!core::is_null_list(next)) {
         next = core::car(next);
       }
 
-      // TODO: Currently assumes there are no lists, only symbols.
-      if(!core::is_symbol(curr)) {
-        throw MacroExpansionException(60001, "No symbol found");
+      switch(curr->get_type()) {
+
+      case Data::Type::SYMBOL:
+        // Generate rule for either a literal id or a pattern variable.
+        if(literal_ids.count(curr->get<Symbol>()) > 0) {
+          new_rule = create_rule_keyword(this, curr->get<Symbol>());
+        } else {
+          new_rule = create_rule_identifier(this, curr->get<Symbol>());
+        }
+        break;
+
+      case Data::Type::DATA_PAIR:
+        // Recursively call this function to parse the sub list.
+        new_rule = list_generator(curr);
+        break;
+
+      case Data::Type::NUMBER:
+      case Data::Type::STRING:
+      case Data::Type::PRIMITIVE_FORM:
+      case Data::Type::BOOLEAN:
+      case Data::Type::NULL_LIST:
+      default:
+        throw MacroExpansionException(
+            60020,
+            "list_generation: type unimplemented"
+        );
       }
 
-      // Check for special keywords
-      if(literal_ids.count(curr->get<Symbol>()) > 0) {
-        new_rule = create_rule_keyword(this, curr->get<Symbol>());
-      } else {
-        new_rule = create_rule_identifier(this);
-      }
-
-      // Check for ellipsis
+      // Repeat the previously generated pattern if the pattern is followed
+      // by a variable.
       if(core::is_symbol(next) && next->get<Symbol>() == ellipsis) {
         new_rule = create_rule_kleene_plus(new_rule);
         it = core::cdr(it);
       }
 
-      built_expander = built_expander & new_rule;
+      // Append new rule to pattern match, in the form of "and then".
+      matcher = matcher & new_rule;
     }
 
     // Add null list to signify end of match
-    built_expander = built_expander & create_rule_null_list(this);
+    matcher = matcher & create_rule_null_list(this);
 
   } catch(const MacroExpansionException& e) {
     throw e;
@@ -240,13 +295,45 @@ void SyntaxCase::generate() {
             + macro_keyword.get_value()
     );
   }
-  parse_macro_use = built_expander;
+
+  return matcher;
 }
+
+
+/**
+ * @brief Replace the expand_macro function with a valid matcher function.
+ */
+void SyntaxCase::generate() {
+
+  // Check for initial macro symbol or underscore.
+  if(!core::is_pair(pattern) || !core::is_symbol(core::car(pattern))) {
+    throw MacroExpansionException(
+        60002,
+        "No symbol at start of macro pattern list"
+    );
+  }
+  auto str = core::car(pattern)->get<Symbol>().get_value();
+  if(str != macro_keyword.get_value() && str != "_") {
+    throw MacroExpansionException(
+        60001,
+        "macro keyword or underscore not found"
+    );
+  }
+
+  // Create initial rule to match macro name.
+  SyntaxRule matcher =
+      create_rule_keyword(this, macro_keyword) |
+      create_rule_keyword(this, Symbol("_"));
+
+  // Build rule for the rest of the pattern and "and then" it with the
+  // initial rule.
+  parse_macro_use = matcher & list_generator(core::cdr(pattern));
+}
+
 
 bool SyntaxCase::match(NodePtr macro) {
   transform_bindings.clear();
-  it = macro;
-  return parse_macro_use();
+  return parse_macro_use(macro);
 }
 
 
@@ -271,6 +358,7 @@ NodePtr copy_list(NodePtr root) {
 
   return built_list;
 }
+
 
 NodePtr SyntaxCase::transform_identifier(
     NodePtr curr,
@@ -358,7 +446,8 @@ NodePtr SyntaxCase::transform_identifier(
   } else {
     // May be a free variable.
     segment = core::append(
-        segment, shaka::create_node(Symbol(curr->get<Symbol>().get_value()))
+        segment,
+        core::list(shaka::create_node(Symbol(curr->get<Symbol>().get_value())))
     );
   }
 
@@ -375,12 +464,17 @@ void SyntaxCase::expand(NodePtr macro) {
   it = templat;
   NodePtr segment;
 
-  // Begin generation from template
+  // Iterate through the template, until the end is reached.
+  // For each symbol, build the corresponding expanded form of the symbol and
+  // push it into a list representing the complete expanded form.
   while(it->get_type() != Data::Type::NULL_LIST) {
 
+    // Iterate one s-expression
     curr = core::car(it);
     it = core::cdr(it);
 
+    // The expression of curr needs to be evaluated differently depending on
+    // the type of the list.
     switch(curr->get_type()) {
     case Data::Type::SYMBOL:
       if(curr->get<Symbol>() != ellipsis) {
@@ -413,13 +507,12 @@ void SyntaxCase::expand(NodePtr macro) {
     expanded_form = core::append(expanded_form, segment);
   }
 
-
-  // After expansion is finished, replace original pointer
+  // After expansion is finished, replace the car and cons of the macro with
+  // the expanded form. Then clear the bindings for the next usage.
   core::set_car(macro, core::car(expanded_form));
   core::set_cdr(macro, core::cdr(expanded_form));
   transform_bindings.clear();
 }
-
 
 
 } // namespace macro

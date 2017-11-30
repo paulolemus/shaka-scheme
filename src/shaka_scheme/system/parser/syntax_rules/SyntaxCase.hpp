@@ -37,9 +37,16 @@ struct MacroContext;
  *        How it works:
  *        1. generate() is called. This generates the internal function that
  *           matches and extracts binding information from a macro use.
- *        2. match(NodePtr macro) is called. This 
+ *        2. match(NodePtr macro) is called. If there is a match, this
+ *           function prepares the expand function for the corresponding
+ *           expansion.
+ *        3. expand(NodePtr macro) is called. This generates the expanded form
+ *           of the macro, and then replaces the car and cons of the original
+ *           NodePtr. Any failures result in a MacroExpansionError.
  */
-struct SyntaxCase {
+class SyntaxCase {
+
+public:
 
   /**
    * @brief Create SyntaxCase will everything it needs to match a NodePtr
@@ -59,6 +66,16 @@ struct SyntaxCase {
       NodePtr templat,
       std::size_t scope
   );
+
+  /**
+   * @brief General getters. These are used purely for checking in tests.
+   *        Consider removing these fields and leaving the members private.
+   */
+  const Symbol& get_macro_keyword() const;
+  const Symbol& get_ellipsis() const;
+  const std::set<Symbol>& get_literal_ids() const;
+  const NodePtr& get_pattern() const;
+  const NodePtr& get_templat() const;
 
   /**
    * @brief Generates the function used to match a macro use.
@@ -87,6 +104,31 @@ struct SyntaxCase {
   void expand(NodePtr macro);
 
   /**
+   * @brief Used for matching.
+   */
+  NodePtr it;
+
+  /**
+   * @brief used for transformation of macro use. Internal use, public for
+   *        convenience.
+   *        This keeps track of what to replace a pattern identifier with from
+   *        the macro use.
+   */
+  std::map<Symbol, std::vector<NodePtr>> transform_bindings;
+
+private:
+
+  /**
+   * @brief Assistive function for generate(). This is used to generate a
+   * pattern matching function for any "flat" list. If during generation it
+   * encounters another list, it recursively calls itself to process the sub
+   * list.
+   * @param root Node at the start of a valid list.
+   * @return A function that matches to a pattern in a list.
+   */
+  SyntaxRule list_generator(NodePtr root);
+
+  /**
    * @brief Used internally during the expansion of a identifier in the
    * template.
    * @param curr The Data node with the current ientifier
@@ -94,6 +136,7 @@ struct SyntaxCase {
    * @return NodePtr of new expanded segment.
    */
   NodePtr transform_identifier(NodePtr curr, NodePtr next);
+
 
   /**
    * @brief The function that is generated to match and expand a macro.
@@ -135,17 +178,7 @@ struct SyntaxCase {
    */
   NodePtr templat;
 
-  /**
-   * @brief Used for matching.
-   */
-  NodePtr it;
 
-  /**
-   * @brief used for transformation of macro use. Internal use.
-   *        This keeps track of what to replace a pattern identifier with from
-   *        the macro use.
-   */
-  std::map<Symbol, std::vector<NodePtr>> transform_bindings;
 
   /**
    * @brief The unique scope to this particular syntax case.
