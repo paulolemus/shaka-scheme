@@ -57,9 +57,10 @@ TEST(SyntaxRulesMacroUnitTest, match_simple) {
   std::cout << macro << std::endl;
 
   NodePtr expr1 = list(c(Symbol("test")));
+  NodePtr expr2 = list(c(Symbol("test")));
 
-  ASSERT_TRUE(syntax_case->expand(expr1));
-  ASSERT_TRUE(macro.expand(expr1));
+  ASSERT_NO_THROW(syntax_case->expand(expr1));
+  ASSERT_TRUE(macro.expand(expr2));
 }
 
 TEST(SyntaxRulesMacroUnitTest, match_multiple_cases) {
@@ -123,11 +124,14 @@ TEST(SyntaxRulesMacroUnitTest, match_multiple_cases) {
       c(Symbol("the-end"))
   );
 
-  std::cout << *expr1 << std::endl;
-  std::cout << *expr2 << std::endl;
 
+  std::cout << "BEFORE: " << *expr1 << std::endl;
   ASSERT_TRUE(macro.expand(expr1));
+  std::cout << "AFTER: " << *expr1 << std::endl;
+
+  std::cout << "BEFORE: " << *expr2 << std::endl;
   ASSERT_TRUE(macro.expand(expr2));
+  std::cout << "AFTER: " << *expr2 << std::endl;
 }
 
 TEST(SyntaxRulesMacroUnitTest, parse_string) {

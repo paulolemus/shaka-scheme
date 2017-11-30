@@ -153,6 +153,7 @@ SyntaxRule create_rule_kleene_plus(
 SyntaxRule create_rule_null_list() {
 
   return [=](NodePtr& it) -> bool {
+    std::cout << "in rule null list" << std::endl;
     return core::is_null_list(it);
   };
 }
@@ -489,12 +490,10 @@ NodePtr SyntaxCase::list_expander(NodePtr it) {
       break;
 
     case Data::Type::DATA_PAIR:
-    std::cout << "ENTERED DATA PAIR PART" << std::endl;
       segment = list(list_expander(curr));
       break;
 
     default:
-    std::cout << "ENTERED DEFAULT FOR THING" << std::endl;
       throw MacroExpansionException(
           60001,
           "NodePtr type is not implemented for macro expansion"

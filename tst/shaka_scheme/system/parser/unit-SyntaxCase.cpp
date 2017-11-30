@@ -410,6 +410,51 @@ TEST(SyntaxCaseUnitTest, match_with_literal_ids) {
   ASSERT_FALSE(syntax_case.match(invalid_expr));
 }
 
+
+/**
+ * @brief After matching, can I expand a simple macro in place?
+ */
+TEST(SyntaxCaseUnitTest, expand_base_macro) {
+  const auto& c = create_node;
+
+  // Macro:
+  // (define-syntax simple
+  //   (syntax-rules ()
+  //     [(simple) (quote a)]))
+  Symbol macro_keyword("simple");
+  Symbol ellipsis("...");
+  std::set<Symbol> literal_ids;
+  NodePtr pattern = list(
+      c(Symbol("simple"))
+  );
+  NodePtr templat = list(
+      c(Symbol("quote")),
+      c(Symbol("a"))
+  );
+  std::size_t scope = 3;
+
+  SyntaxCase syntax_case(
+      macro_keyword,
+      ellipsis,
+      literal_ids,
+      pattern,
+      templat,
+      scope
+  );
+
+  NodePtr valid_expr = list(
+      c(Symbol("simple"))
+  );
+  std::cout << *core::car(valid_expr) << std::endl;
+  std::cout << *core::cdr(valid_expr) << std::endl;
+
+  std::cout << "BEFORE: " << *valid_expr << std::endl;
+  ASSERT_TRUE(syntax_case.match(valid_expr));
+  ASSERT_NO_THROW(syntax_case.expand(valid_expr));
+  std::cout << "AFTER: " << *valid_expr << std::endl;
+  ASSERT_EQ(car(valid_expr)->get<Symbol>(), Symbol("quote"));
+  ASSERT_EQ(car(cdr(valid_expr))->get<Symbol>(), Symbol("a"));
+}
 /**
  * @brief After matching, can I expand a simple macro in place?
  */
