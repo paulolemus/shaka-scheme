@@ -3,7 +3,7 @@
 
 #include <set>
 
-#include "shaka_scheme/system/base/DataPair.hpp"
+#include "shaka_scheme/system/base/Data.hpp"
 #include "shaka_scheme/system/base/Symbol.hpp"
 
 namespace shaka {
@@ -73,6 +73,13 @@ public:
       std::ostream& lhs,
       const SyntaxRule& rhs
   );
+
+
+  // Testing functions
+  const Symbol& get_ellipsis() const;
+  const std::set<Symbol>& get_literal_ids() const;
+  const NodePtr& get_pattern() const;
+  const NodePtr& get_templat() const;
 
 private:
 

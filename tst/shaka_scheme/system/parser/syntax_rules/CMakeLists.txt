@@ -1,0 +1,2 @@
+macro_shaka_scheme_test(unit-SyntaxRule)
+macro_shaka_scheme_test(unit-SyntaxRulesMacro)
