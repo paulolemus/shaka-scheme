@@ -57,8 +57,6 @@ set(SOURCE_FILES
         src/shaka_scheme/system/vm/Closure.cpp
         src/shaka_scheme/system/vm/compiler/Compiler.cpp
         src/shaka_scheme/system/base/PrimitiveFormMarker.cpp
-        src/shaka_scheme/system/parser/syntax_rules/MacroContext.cpp
-        src/shaka_scheme/system/parser/syntax_rules/SyntaxRulesMacro.cpp
         src/shaka_scheme/system/lexer/lexer_definitions.cpp
         src/shaka_scheme/system/lexer/rules/rule_boolean.cpp
         src/shaka_scheme/system/lexer/rules/common_rules.cpp
@@ -70,6 +68,9 @@ set(SOURCE_FILES
         src/shaka_scheme/system/lexer/rules/rule_token.cpp
         src/shaka_scheme/system/parser/parser_definitions.cpp
         src/shaka_scheme/system/lexer/rules/init.cpp
+        src/shaka_scheme/system/parser/syntax_rules/MacroContext.cpp
+        src/shaka_scheme/system/parser/syntax_rules/SyntaxRulesMacro.cpp
+        src/shaka_scheme/system/parser/syntax_rules/SyntaxRule.cpp
         src/shaka_scheme/system/base/Integer.cpp
         src/shaka_scheme/system/base/Rational.cpp
         src/shaka_scheme/system/base/Real.cpp
@@ -81,11 +82,9 @@ set(SOURCE_FILES
         src/shaka_scheme/system/gc/GC.cpp
         src/shaka_scheme/runtime/stdproc/boolean.cpp
         src/shaka_scheme/runtime/stdproc/pairs_and_lists.cpp
-
         src/shaka_scheme/system/base/Bytevector.cpp
         src/shaka_scheme/system/base/Character.cpp
         src/shaka_scheme/system/base/Vector.cpp
-
         src/shaka_scheme/system/gc/init_gc.cpp
         src/shaka_scheme/system/base/BigInteger.cpp
         src/shaka_scheme/system/gc/mark_procedures.cpp
@@ -93,11 +92,11 @@ set(SOURCE_FILES
         src/shaka_scheme/system/core/lists.cpp
         src/shaka_scheme/system/core/types.cpp
         src/shaka_scheme/system/core/vectors.cpp
+        src/shaka_scheme/system/gc/GCList.cpp
         )
 
 add_library(${SHAKA_SCHEME_LIBRARY_NAME} SHARED ${SOURCE_FILES})
-target_compile_options(${SHAKA_SCHEME_LIBRARY_NAME} PRIVATE -Wall -Wextra
--pedantic)
+target_compile_options(${SHAKA_SCHEME_LIBRARY_NAME} PRIVATE -Wall -Wextra -pedantic)
 # Copy the shared library DLL/dynamic library file also into the
 # bin/tst/ folder so that the tests will also be able to find and link to it.
 add_custom_command(TARGET ${SHAKA_SCHEME_LIBRARY_NAME}
