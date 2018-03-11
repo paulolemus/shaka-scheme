@@ -30,7 +30,7 @@ bool SyntaxRulesMacro::transform(NodePtr macro) {
 
 std::ostream& operator<<(
     std::ostream& lhs,
-    const SyntaxRule& rhs
+    const SyntaxRulesMacro& rhs
 ) {
   lhs << "SyntaxRulesMacro operation todo";
   return lhs;
