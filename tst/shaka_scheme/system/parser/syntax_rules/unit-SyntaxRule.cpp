@@ -102,9 +102,10 @@ TEST(SyntaxRuleUnitTest, match_simple) {
   NodePtr fail2 = list(c(Symbol("take-none")), c(Symbol("hello")));
 
   ASSERT_NO_THROW(syntax_rule.build());
+  std::cout << "ENDED BUILDING DAWG\n";
   ASSERT_TRUE(syntax_rule.match(macro1));
   ASSERT_TRUE(syntax_rule.match(macro2));
-  ASSERT_FALSE(syntax_rule.match(fail1));
+  ASSERT_THROW(syntax_rule.match(fail1), MacroExpansionException);
   ASSERT_FALSE(syntax_rule.match(fail2));
 }
 
@@ -152,10 +153,10 @@ TEST(SyntaxRuleUnitTest, match_take_one) {
   NodePtr pattern4 = list(c(Symbol("take-one")), c(Symbol("_")));
   NodePtr templat = c(Symbol("item"));
 
-  SyntaxRule syntax_rule1(ellipsis, literal_ids, pattern1, templat);
-  SyntaxRule syntax_rule2(ellipsis, literal_ids, pattern2, templat);
+  SyntaxRule syntax_rule1(ellipsis, literal_id_none, pattern1, templat);
+  SyntaxRule syntax_rule2(ellipsis, literal_id_none, pattern2, templat);
   SyntaxRule syntax_rule3(ellipsis, literal_ids, pattern3, templat);
-  SyntaxRule syntax_rule4(ellipsis, literal_ids, pattern4, templat);
+  SyntaxRule syntax_rule4(ellipsis, literal_id_none, pattern4, templat);
 
   NodePtr macro1 = list(c(Symbol("take-one")), c(Number(1)));
   NodePtr macro2 = list(c(Symbol("take-none")), c(Symbol("test")));
@@ -258,9 +259,9 @@ TEST(SyntaxRuleUnitTest, match_ellipsis) {
   ASSERT_TRUE(syntax_rule3.match(macro4));
   ASSERT_TRUE(syntax_rule3.match(macro5));
 
-  ASSERT_FALSE(syntax_rule2.match(macro1));
+  ASSERT_THROW(syntax_rule2.match(macro1), MacroExpansionException);
   ASSERT_FALSE(syntax_rule3.match(macro1));
-  ASSERT_FALSE(syntax_rule3.match(macro2));
+  ASSERT_THROW(syntax_rule3.match(macro2), MacroExpansionException);
 }
 
 
@@ -278,36 +279,41 @@ TEST(SyntaxRuleUnitTest, transform_simple) {
   NodePtr fail1 = c(Symbol("take-none"));
   NodePtr fail2 = list(c(Symbol("take-none")), c(Symbol("hello")));
 
+  std::cout << "BEFORE: " << *macro1 << std::endl;
   ASSERT_NO_THROW(syntax_rule.build());
   ASSERT_TRUE(syntax_rule.transform(macro1));
   ASSERT_TRUE(syntax_rule.transform(macro2));
-  ASSERT_FALSE(syntax_rule.transform(fail1));
+  ASSERT_THROW(syntax_rule.transform(fail1), MacroExpansionException);
   ASSERT_FALSE(syntax_rule.transform(fail2));
+
+  std::cout << "AFTER: " << *macro1 << std::endl;
 
   ASSERT_EQ(
       car(macro1)->get<Symbol>(),
       car(templat)->get<Symbol>()
   );
-  ASSERT_EQ(
-      cdr(car(macro1))->get<Number>(),
-      cdr(car(templat))->get<Number>()
-  );
-  ASSERT_EQ(
-      cdr(cdr(car(macro1)))->get<Number>(),
-      cdr(cdr(car(templat)))->get<Number>()
-  );
-}
 
+  ASSERT_EQ(
+      car(cdr(macro1))->get<Number>(),
+      car(cdr(templat))->get<Number>()
+  );
+
+   ASSERT_EQ(
+      car(cdr(cdr(macro1)))->get<Number>(),
+      car(cdr(cdr(templat)))->get<Number>()
+  );
+
+}
 
 TEST(SyntaxRuleUnitTest, transform_simple_literal) {
 
-  // (define-syntax take-none (syntax-rules (lit) ((take-none) success)))
-  // (define-syntax take-none (syntax-rules (lit) ((take-none lit) success)))
+  // (define-syntax take-none (syntax-rules (lit) ((take-none) (success))))
+  // (define-syntax take-none (syntax-rules (lit) ((take-none lit) (success))))
   std::set<Symbol> literal_ids;
   literal_ids.insert(Symbol("lit"));
   NodePtr pattern1 = list(c(Symbol("take-none")));
   NodePtr pattern2 = list(c(Symbol("take-none")), c(Symbol("lit")));
-  NodePtr templat = c(Symbol("success"));
+  NodePtr templat = list(c(Symbol("success")));
 
   SyntaxRule syntax_rule1(ellipsis, literal_ids, pattern1, templat);
   SyntaxRule syntax_rule2(ellipsis, literal_ids, pattern2, templat);
@@ -319,8 +325,8 @@ TEST(SyntaxRuleUnitTest, transform_simple_literal) {
   ASSERT_NO_THROW(syntax_rule2.build());
   ASSERT_TRUE(syntax_rule1.transform(macro1));
   ASSERT_TRUE(syntax_rule2.transform(macro2));
-  ASSERT_EQ(macro1->get<Symbol>(), templat->get<Symbol>());
-  ASSERT_EQ(macro2->get<Symbol>(), templat->get<Symbol>());
+  ASSERT_EQ(car(macro1)->get<Symbol>(), car(templat)->get<Symbol>());
+  ASSERT_EQ(car(macro2)->get<Symbol>(), car(templat)->get<Symbol>());
 }
 
 
@@ -340,7 +346,7 @@ TEST(SyntaxRuleUnitTest, transform_take_one) {
       c(Symbol("item"))
   );
   NodePtr pattern4 = list(c(Symbol("take-one")), c(Symbol("_")));
-  NodePtr templat = c(Symbol("item"));
+  NodePtr templat = list(c(Symbol("item")));
 
   SyntaxRule syntax_rule1(ellipsis, literal_ids, pattern1, templat);
   SyntaxRule syntax_rule2(ellipsis, literal_ids, pattern2, templat);
@@ -360,10 +366,18 @@ TEST(SyntaxRuleUnitTest, transform_take_one) {
   ASSERT_NO_THROW(syntax_rule2.build());
   ASSERT_NO_THROW(syntax_rule3.build());
   ASSERT_NO_THROW(syntax_rule4.build());
+  std::cout << "BEFORE: " << *macro1 << std::endl;
+  std::cout << "BEFORE: " << *macro2 << std::endl;
+  std::cout << "BEFORE: " << *macro3 << std::endl;
+  std::cout << "BEFORE: " << *macro4 << std::endl;
   ASSERT_TRUE(syntax_rule1.transform(macro1));
   ASSERT_TRUE(syntax_rule2.transform(macro2));
   ASSERT_TRUE(syntax_rule3.transform(macro3));
   ASSERT_TRUE(syntax_rule4.transform(macro4));
+  std::cout << "AFTER: " << *macro1 << std::endl;
+  std::cout << "AFTER: " << *macro2 << std::endl;
+  std::cout << "AFTER: " << *macro3 << std::endl;
+  std::cout << "AFTER: " << *macro4 << std::endl;
   // TODO: ADD EXPANSION TO TEMPLATE CHECK
 }
 
@@ -391,7 +405,7 @@ TEST(SyntaxRuleUnitTest, transform_ellipsis) {
       c(Symbol("...")),
       c(Symbol("c"))
   );
-  NodePtr templat = c(Number(1));
+  NodePtr templat = list(c(Symbol("a")), c(Symbol("...")));
 
   SyntaxRule syntax_rule1(ellipsis, literal_id_none, pattern1, templat);
   SyntaxRule syntax_rule2(ellipsis, literal_id_none, pattern2, templat);
@@ -428,6 +442,13 @@ TEST(SyntaxRuleUnitTest, transform_ellipsis) {
   ASSERT_NO_THROW(syntax_rule2.build());
   ASSERT_NO_THROW(syntax_rule3.build());
 
+  std::cout << "BEFORE: " << *macro1_1 << std::endl;
+  std::cout << "BEFORE: " << *macro1_2 << std::endl;
+  std::cout << "BEFORE: " << *macro2_1 << std::endl;
+  std::cout << "BEFORE: " << *macro2_2 << std::endl;
+  std::cout << "BEFORE: " << *macro3_1 << std::endl;
+  std::cout << "BEFORE: " << *macro3_2 << std::endl;
+  std::cout << "BEFORE: " << *macro3_3 << std::endl;
   ASSERT_TRUE(syntax_rule1.transform(macro1_1));
   ASSERT_TRUE(syntax_rule1.transform(macro1_2));
   ASSERT_TRUE(syntax_rule2.transform(macro2_1));
@@ -435,5 +456,13 @@ TEST(SyntaxRuleUnitTest, transform_ellipsis) {
   ASSERT_TRUE(syntax_rule3.transform(macro3_1));
   ASSERT_TRUE(syntax_rule3.transform(macro3_2));
   ASSERT_TRUE(syntax_rule3.transform(macro3_3));
+  std::cout << "AFTER: " << *macro1_1 << std::endl;
+  std::cout << "AFTER: " << *macro1_2 << std::endl;
+  std::cout << "AFTER: " << *macro2_1 << std::endl;
+  std::cout << "AFTER: " << *macro2_2 << std::endl;
+  std::cout << "AFTER: " << *macro3_1 << std::endl;
+  std::cout << "AFTER: " << *macro3_2 << std::endl;
+  std::cout << "AFTER: " << *macro3_3 << std::endl;
   // TODO: ASSERT EXPANSION VS TEMPLATE EQUIVALENCE
 }
+

@@ -18,14 +18,9 @@ using PatternParser = std::function<bool(
     NodePtr&,
     SyntaxRuleBindings&,
     const Symbol&,
-    std::set<Symbol>&
+    const std::set<Symbol>&
 )>;
 
-using TemplateBuilder = std::function<bool(
-    NodePtr,
-    SyntaxRuleBindings&,
-    const Symbol&
-)>;
 
 /**
  * @brief The class used for matching to and expanding a single <syntax-rule>
@@ -109,8 +104,6 @@ private:
   bool is_built;
 
   PatternParser pattern_parser;
-
-  TemplateBuilder template_builder;
 
 };
 
