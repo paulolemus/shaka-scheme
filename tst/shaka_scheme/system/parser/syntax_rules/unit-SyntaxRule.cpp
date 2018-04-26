@@ -406,10 +406,12 @@ TEST(SyntaxRuleUnitTest, transform_ellipsis) {
       c(Symbol("c"))
   );
   NodePtr templat = list(c(Symbol("a")), c(Symbol("...")));
+  NodePtr templat2 = list(c(Symbol("c")), c(Symbol("b")), c(Symbol("...")), c
+      (Symbol("a")));
 
   SyntaxRule syntax_rule1(ellipsis, literal_id_none, pattern1, templat);
   SyntaxRule syntax_rule2(ellipsis, literal_id_none, pattern2, templat);
-  SyntaxRule syntax_rule3(ellipsis, literal_id_none, pattern3, templat);
+  SyntaxRule syntax_rule3(ellipsis, literal_id_none, pattern3, templat2);
 
   NodePtr macro1_1 = list(c(Symbol("take-multi")));
   NodePtr macro1_2 = list(c(Symbol("take-multi")), c(Symbol("first")));

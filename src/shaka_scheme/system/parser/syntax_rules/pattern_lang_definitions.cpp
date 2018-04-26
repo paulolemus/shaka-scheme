@@ -23,19 +23,19 @@ bool is_literal(
     const Symbol& ellipsis,
     const std::set<Symbol>& literals
 ) {
-  std::cout << "is_literal: ";
+  //std::cout << "is_literal: ";
   // If it is any of the following types, it is a literal
   if(data->get_type() == Data::Type::BOOLEAN ||
       data->get_type() == Data::Type::NUMBER ||
       data->get_type() == Data::Type::STRING) {
-    std::cout << "types - true\n";
+    //std::cout << "types - true\n";
     return true;
   }
 
   // If it is an ellipsis, it is not a literal.
   if(data->get_type() == Data::Type::SYMBOL &&
       data->get<Symbol>() == ellipsis) {
-    std::cout << "ellipse - false\n";
+    //nstd::cout << "ellipse - false\n";
     return false;
   }
 
@@ -44,10 +44,10 @@ bool is_literal(
       literals.count(data->get<Symbol>()) > 0;
 
   if(result) {
-    std::cout << "set - true\n";
+    //std::cout << "set - true\n";
     return true;
   } else {
-    std::cout << "set - false\n";
+    ///std::cout << "set - false\n";
     return false;
   }
 }
@@ -90,7 +90,7 @@ PatternParser make_parse_literal(NodePtr& literal) {
       const std::set<Symbol>& literals
   ) -> bool {
 
-    std::cout << "parse_literal: " << *macro << std::endl;
+    //std::cout << "parse_literal: " << *macro << std::endl;
     NodePtr literal_data;
     if(!is_null_list(macro)) {
       literal_data = car(macro);
@@ -101,7 +101,7 @@ PatternParser make_parse_literal(NodePtr& literal) {
 
     if(found_literal) {
       macro = cdr(macro);
-      std::cout << "parse_literal macro: " << *macro << std::endl;
+      //std::cout << "parse_literal macro: " << *macro << std::endl;
       return true;
     } else {
       return false;
@@ -117,7 +117,7 @@ PatternParser make_parse_pattern_var(NodePtr& pattern_var) {
       const Symbol& ellipsis,
       const std::set<Symbol>& literals
   ) -> bool {
-    std::cout << "parse_pattern_var: \n";
+    //nstd::cout << "parse_pattern_var: \n";
 
     // If pattern variable is previously used, throw syntax error.
     Symbol& pattern_binding = pattern_var->get<Symbol>();
@@ -157,7 +157,7 @@ PatternParser make_parse_null() {
       const Symbol& ellipsis,
       const std::set<Symbol>& literals
   ) -> bool {
-    std::cout << "parse_null: " << *macro << std::endl;
+    //std::cout << "parse_null: " << *macro << std::endl;
     if(is_null_list(macro)) {
       return true;
     } else {
@@ -174,7 +174,7 @@ PatternParser make_parse_unit() {
       const Symbol& ellipsis,
       const std::set<Symbol>& literals
   ) -> bool {
-    std::cout << "parse_unit \n";
+    //std::cout << "parse_unit \n";
     return true;
   };
 }
@@ -187,7 +187,7 @@ PatternParser make_parse_kleene(PatternParser& func, size_t post_bind_count) {
       const Symbol& ellipsis,
       const std::set<Symbol>& literals
   ) -> bool {
-    std::cout << "parse_kleene\n";
+    //nstd::cout << "parse_kleene\n";
 
     int count = 0;
     int limit = (int)length(macro) - post_bind_count;
@@ -213,7 +213,7 @@ PatternParser consume_ellipsis(
     const Symbol& ellipsis,
     const std::set<Symbol>& literals
 ) {
-  std::cout << "CONSUMING ELLIPSE\n";
+  //std::cout << "CONSUMING ELLIPSE\n";
   size_t post_binding_count = 0;
   NodePtr it = cdr(cdr(lst));
 
@@ -261,7 +261,7 @@ PatternParser make_pattern_parser(
     const std::set<Symbol>& literals
 ) {
 
-  std::cout << "MAKE_PTRN_PARSR: " << *pattern << std::endl;
+  //std::cout << "MAKE_PTRN_PARSR: " << *pattern << std::endl;
   PatternParser parser_builder = make_parse_unit();
   PatternParser curr_parser = make_parse_unit();
 
@@ -289,26 +289,26 @@ PatternParser make_pattern_parser(
             "Syntax Error, ellipsis only valid once per pattern list."
         );
       }
-      std::cout << "build: found ellipse\n";
+      //std::cout << "build: found ellipse\n";
       found_ellipsis = true;
 
     }
 
     // Process current node
     if(is_literal(curr_data, ellipsis, literals)) {
-      std::cout << "build: adding literal\n";
+      //std::cout << "build: adding literal\n";
       curr_parser = make_parse_literal(curr_data);
 
     } else if(is_pattern_var(curr_data, ellipsis, literals)) {
-      std::cout << "build: adding pat var\n";
+      //std::cout << "build: adding pat var\n";
       curr_parser = make_parse_pattern_var(curr_data);
 
     } else if(is_pattern(curr_data)) {
-      std::cout << "build: adding pat\n";
+      //std::cout << "build: adding pat\n";
       curr_parser = make_pattern_parser(curr_data, ellipsis, literals);
 
     } else if(is_ellipsis(curr_data, ellipsis)) {
-      std::cout << "build: adding ellipise\n";
+      //std::cout << "build: adding ellipise\n";
       curr_parser = make_parse_unit();
     }
 
@@ -325,24 +325,24 @@ PatternParser make_pattern_parser(
 
 
   if(!is_null_list(curr)) {
-    std::cout << "build: entered outter loop\n";
+    //std::cout << "build: entered outter loop\n";
 
     NodePtr curr_data = car(curr);
 
     if(is_literal(curr_data, ellipsis, literals)) {
-      std::cout << "build: adding lit\n";
+      //std::cout << "build: adding lit\n";
       curr_parser = make_parse_literal(curr_data);
 
     } else if(is_pattern_var(curr_data, ellipsis, literals)) {
-      std::cout << "build: adding patrn var\n";
+      //nstd::cout << "build: adding patrn var\n";
       curr_parser = make_parse_pattern_var(curr_data);
 
     } else if(is_pattern(curr_data)) {
-      std::cout << "build: adding pattnr\n";
+      //std::cout << "build: adding pattnr\n";
       curr_parser = make_pattern_parser(curr_data, ellipsis, literals);
 
     } else if(is_ellipsis(curr_data, ellipsis)) {
-      std::cout << "build: adding ellipise\n";
+      //std::cout << "build: adding ellipise\n";
       curr_parser = make_parse_unit();
     }
     parser_builder = make_then(parser_builder, curr_parser);

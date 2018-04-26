@@ -8,6 +8,7 @@
 #include "shaka_scheme/system/exceptions/MacroExpansionException.hpp"
 
 #include "shaka_scheme/system/parser/syntax_rules/MacroContext.hpp"
+#include "shaka_scheme/system/parser/syntax_rules/SyntaxRulesMacro.hpp"
 
 #include <map>
 #include <stack>
@@ -279,6 +280,98 @@ std::ostream& operator<<(
   return lhs;
 }
 
+void build_macro(NodePtr root, MacroContext& context) {
+  //std::cout << "BUILDING MACRO" << std::endl;
+
+  Symbol macro_keyword(Symbol(core::car(root)->get<Symbol>().get_value()));
+  //std::cout << macro_keyword << std::endl;
+
+  // Check for transformer spec
+  root = core::car(core::cdr(root));
+  Symbol syntax_rules_sym = core::car(root)->get<Symbol>().get_value();
+  if(!is_primitive_syntax_rules(syntax_rules_sym, context)) {
+    throw MacroExpansionException(
+        3455,
+        "Must be followed by primitive syntax-rules"
+    );
+  }
+
+  root = core::cdr(root);
+  Symbol ellipsis("...");
+
+  NodePtr literal_list = core::car(root);
+  std::set<Symbol> literals;
+
+  if(!core::is_proper_list(literal_list)) {
+    throw MacroExpansionException(60008, "missing literal-id proper list");
+  }
+  // Add all literal-IDs in list to set
+  while(literal_list->get_type() != Data::Type::NULL_LIST) {
+    NodePtr current_id = core::car(literal_list);
+    if(current_id->get_type() != Data::Type::SYMBOL) {
+      throw MacroExpansionException(60007, "Invalid literal-id type");
+    }
+    literals.insert(current_id->get<Symbol>());
+    literal_list = core::cdr(literal_list);
+  }
+
+  root = core::cdr(root);
+
+  // Here we have reached the syntax rule list
+  // Important variables that have been created so far:
+  // macro_keyword (Symbol): the special keyword of the macro
+  // ellipsis (Symbol): string that represents ellipsis, currently set to "..."
+  // literal_ids (set<Symbol>): all the literal-IDs that may be in patterns
+
+  // Instantiate SyntaxCases
+  std::vector<SyntaxRulePtr> syntax_rules;
+
+  // Create each SyntaxCase instance
+  while(root->get_type() != Data::Type::NULL_LIST) {
+
+    NodePtr syntax_rule_list = core::car(root);
+    NodePtr pattern = core::car(syntax_rule_list);
+    NodePtr templat = core::car(core::cdr(syntax_rule_list));
+
+    context.push_scope();
+
+    //std::cout << *syntax_rule_list << std::endl;
+    //std::cout << *pattern << std::endl;
+    //std::cout << *templat << std::endl;
+
+    SyntaxRulePtr syntax_rule = std::make_shared<SyntaxRule>(
+        ellipsis,
+        literals,
+        pattern,
+        templat
+    );
+    syntax_rules.push_back(syntax_rule);
+
+    context.pop_scope();
+    //std::cout << *syntax_rules.back() << std::endl;
+    root = core::cdr(root);
+  }
+
+  // Generate the pattern matcher for each case
+  for(auto& syntax_rule : syntax_rules) {
+    syntax_rule->build();
+  }
+
+  // Create Macro instance and bind to symbol in MacroContext
+  MacroPtr macro = std::make_shared<SyntaxRulesMacro>(
+      macro_keyword,
+      syntax_rules
+  );
+
+  //std::cout << *macro << std::endl;
+
+  context.map_macro(
+      macro_keyword,
+      macro
+  );
+
+}
+
 void run_macro_expansion(
     NodePtr root,
     MacroContext& macro_context) {
@@ -298,6 +391,13 @@ void run_macro_expansion(
       Symbol identifier = proc_name->get<Symbol>();
       if (auto macro = get_macro(identifier, macro_context)) {
         //std::cout << "NEED TO EXPAND MACRO HERE!" << std::endl;
+        try {
+          std::cout << "Caught macro: " << identifier << std::endl;
+          std::cout << "About to begin expansion on : " << *root << std::endl;
+          macro->transform(root);
+        } catch(const std::exception& e) {
+          std::cerr << e.what() << std::endl;
+        }
       } else {
         if (process_define_form(root, macro_context)) {
           //std::cout << "PRIMITIVE: define" << std::endl;
@@ -313,6 +413,8 @@ void run_macro_expansion(
           //std::cout << "PRIMITIVE: define-syntax" << std::endl;
           need_to_pop_scope = true;
           macro_context.push_scope();
+          build_macro(core::cdr(root), macro_context);
+          return;
         } else if (is_primitive_let_syntax(identifier, macro_context)) {
           //std::cout << "PRIMITIVE: let-syntax" << std::endl;
           need_to_pop_scope = true;

@@ -83,9 +83,9 @@ bool SyntaxRule::match(NodePtr macro) {
         "Syntax Error, first item must be an identifier."
     );
   }
-  std::cout <<"MATCH: before cdr\n";
+  //std::cout <<"MATCH: before cdr\n";
   NodePtr rest = core::cdr(macro);
-  std::cout <<"MATCH: PASSING: " << *rest << std::endl;
+  //std::cout <<"MATCH: PASSING: " << *rest << std::endl;
   SyntaxRuleBindings bindings;
   return pattern_parser(rest, bindings, ellipsis, literal_ids);
 }
@@ -166,6 +166,12 @@ static NodePtr transform_identifier(
             list(c(String(node->get<String>().get_string())))
         );
 
+      } else if(node->get_type() == Data::Type::NUMBER) {
+        sub_segment = core::append(
+            sub_segment,
+            list(c(Number(node->get<Number>())))
+        );
+
       } else if(core::is_boolean(node)) {
         sub_segment = core::append(
             sub_segment,
@@ -219,6 +225,8 @@ static NodePtr transform_list(
   NodePtr expanded_it = expanded_form;
   NodePtr curr = it;
   NodePtr segment;
+
+  std::cout << "transform list: " << *it << std::endl;
 
   // Iterate through the template, until the end is reached.
   // For each symbol, build the corresponding expanded form of the symbol and
@@ -282,6 +290,8 @@ static NodePtr transform_list(
 
 bool SyntaxRule::transform(NodePtr macro) {
 
+  std::cout << "transform: " << *macro << std::endl;
+
   if(!is_built) {
     throw MacroExpansionException(
         5469,
@@ -308,7 +318,7 @@ bool SyntaxRule::transform(NodePtr macro) {
 
   SyntaxRuleBindings bindings;
   if(!pattern_parser(rest, bindings, ellipsis, literal_ids)) {
-    std::cout << "transform: failed to parse\n";
+    std::cout << "SyntaxRule transform: failed to parse\n";
     return false;
   }
 
@@ -337,8 +347,10 @@ bool SyntaxRule::transform(NodePtr macro) {
 
   } catch(const std::exception& e) {
     std::cout << e.what() << std::endl;
+    std::cout << "SYNTAXRULE: FAILED" << std::endl;
     return false;
   }
+  std::cout << "SYNTAXRULE: SUCCESS" << std::endl;
   return true;
 }
 

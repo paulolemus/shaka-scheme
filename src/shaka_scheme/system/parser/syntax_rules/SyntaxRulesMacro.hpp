@@ -32,7 +32,7 @@ public:
    */
   SyntaxRulesMacro(
       Symbol& macro_keyword,
-      std::vector<SyntaxRulePtr>& syntax_cases
+      std::vector<SyntaxRulePtr>& syntax_rules
   );
 
   /**
