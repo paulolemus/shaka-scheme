@@ -65,8 +65,6 @@ set(SOURCE_FILES
         src/shaka_scheme/system/core/types.cpp
         src/shaka_scheme/system/core/vectors.cpp
 
-        src/shaka_scheme/system/exceptions/MissingImplementationException.hpp
-
         src/shaka_scheme/system/vm/CallFrame.cpp
         src/shaka_scheme/system/vm/HeapVirtualMachine.cpp
         src/shaka_scheme/system/vm/Closure.cpp

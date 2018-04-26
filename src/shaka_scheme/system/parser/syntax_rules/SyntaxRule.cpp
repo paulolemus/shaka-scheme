@@ -14,15 +14,38 @@ SyntaxRule::SyntaxRule(
 ) : ellipsis(ellipsis),
     literal_ids(literal_ids),
     pattern(pattern),
-    templat(templat) {}
+    templat(templat),
+    is_built(false) {
+
+  pattern_parser = [](
+      NodePtr& macro,
+      SyntaxRuleBindings& bindings,
+      const Symbol& ellipsis,
+      std::set<Symbol>& literal_ids
+  ) -> bool {
+    return false;
+  };
+
+  template_builder = [](
+      NodePtr macro,
+      SyntaxRuleBindings& bindings,
+      const Symbol& ellipsis
+  ) -> bool {
+    return false;
+  };
+}
 
 
 void SyntaxRule::build() {
 
+  is_built = true;
 }
 
 bool SyntaxRule::match(NodePtr macro) {
-  return false;
+
+  if(!is_built) {
+    // throw error
+  }
 }
 
 bool SyntaxRule::transform(NodePtr macro) {

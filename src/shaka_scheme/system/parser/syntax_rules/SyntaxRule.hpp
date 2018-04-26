@@ -1,13 +1,31 @@
 #ifndef SHAKA_SCHEME_SYNTAXRULE_HPP
 #define SHAKA_SCHEME_SYNTAXRULE_HPP
 
+#include <functional>
+#include <map>
 #include <set>
+#include <vector>
 
 #include "shaka_scheme/system/base/Data.hpp"
 #include "shaka_scheme/system/base/Symbol.hpp"
 
 namespace shaka {
 namespace macro {
+
+using SyntaxRuleBindings = std::map<Symbol, std::vector<NodePtr>>;
+
+using PatternParser = std::function<bool(
+    NodePtr&,
+    SyntaxRuleBindings&,
+    const Symbol&,
+    std::set<Symbol>&
+)>;
+
+using TemplateBuilder = std::function<bool(
+    NodePtr,
+    SyntaxRuleBindings&,
+    const Symbol&
+)>;
 
 /**
  * @brief The class used for matching to and expanding a single <syntax-rule>
@@ -87,6 +105,12 @@ private:
   const std::set<Symbol> literal_ids;
   const NodePtr pattern;
   const NodePtr templat;
+
+  bool is_built;
+
+  PatternParser pattern_parser;
+
+  TemplateBuilder template_builder;
 
 };
 
