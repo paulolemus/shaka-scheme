@@ -7,8 +7,8 @@ namespace macro {
 
 
 SyntaxRulesMacro::SyntaxRulesMacro(
-    Symbol& macro_keyword,
-    std::vector<SyntaxRulePtr>& syntax_cases
+    const Symbol& macro_keyword,
+    const std::vector<SyntaxRulePtr>& syntax_cases
 ) : macro_keyword(macro_keyword),
     syntax_rules(syntax_cases) {
   for(const auto& syntax_rule : syntax_rules) {
@@ -27,7 +27,8 @@ bool SyntaxRulesMacro::transform(NodePtr macro) {
   }
   throw MacroExpansionException(
       4343,
-      "Failed to parse " + this->macro_keyword.get_value() + " macro"
+      "Failed to parse " + this->macro_keyword.get_value() + " macro. " +
+      "No matching patterns."
   );
 }
 

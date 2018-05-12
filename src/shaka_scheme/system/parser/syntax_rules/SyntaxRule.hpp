@@ -47,10 +47,10 @@ public:
    * @param templat NodePtr to <template> of <syntax rule>.
    */
   SyntaxRule(
-      Symbol& ellipsis,
-      std::set<Symbol>& literal_ids,
-      NodePtr pattern,
-      NodePtr templat
+      const Symbol& ellipsis,
+      const std::set<Symbol>& literal_ids,
+      const NodePtr pattern,
+      const NodePtr templat
   );
 
   /**

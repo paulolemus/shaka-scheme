@@ -85,6 +85,7 @@ set(SOURCE_FILES
         src/shaka_scheme/system/parser/syntax_rules/MacroContext.cpp
         src/shaka_scheme/system/parser/syntax_rules/SyntaxRulesMacro.cpp
         src/shaka_scheme/system/parser/syntax_rules/SyntaxRule.cpp
+        src/shaka_scheme/system/parser/syntax_rules/pattern_lang_definitions.cpp
 
         src/shaka_scheme/system/gc/GCData.cpp
         src/shaka_scheme/system/gc/GCList.cpp

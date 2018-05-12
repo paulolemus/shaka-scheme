@@ -47,7 +47,7 @@ bool is_literal(
     //std::cout << "set - true\n";
     return true;
   } else {
-    ///std::cout << "set - false\n";
+    //std::cout << "set - false\n";
     return false;
   }
 }
@@ -97,9 +97,35 @@ PatternParser make_parse_literal(NodePtr& literal) {
     } else {
       return false;
     }
-    bool found_literal = is_literal(literal_data, ellipsis, literals);
 
-    if(found_literal) {
+    if(!is_literal(literal_data, ellipsis, literals)) {
+      return false;
+    }
+
+    bool literal_matching = false;
+
+    if(literal->get_type() == Data::Type::BOOLEAN &&
+        literal_data->get_type() == Data::Type::BOOLEAN &&
+        literal->get<Boolean>() == literal_data->get<Boolean>()) {
+      literal_matching = true;
+    }
+    else if(literal->get_type() == Data::Type::NUMBER &&
+        literal_data->get_type() == Data::Type::NUMBER &&
+        literal->get<Number>() == literal_data->get<Number>()) {
+      literal_matching = true;
+    }
+    else if(literal->get_type() == Data::Type::STRING &&
+        literal_data->get_type() == Data::Type::STRING &&
+        literal->get<String>() == literal_data->get<String>()) {
+      literal_matching = true;
+    }
+    else if(literal->get_type() == Data::Type::SYMBOL &&
+        literal_data->get_type() == Data::Type::SYMBOL &&
+        literal->get<Symbol>() == literal_data->get<Symbol>()) {
+      literal_matching = true;
+    }
+
+    if(literal_matching) {
       macro = cdr(macro);
       //std::cout << "parse_literal macro: " << *macro << std::endl;
       return true;
@@ -111,23 +137,24 @@ PatternParser make_parse_literal(NodePtr& literal) {
 
 PatternParser make_parse_pattern_var(NodePtr& pattern_var) {
 
+  //std::cout << "CREATING: parse_pattern_var: "
+  //    + pattern_var->get<Symbol>().get_value()
+  //          << std::endl;
   return [=](
       NodePtr& macro,
       SyntaxRuleBindings& bindings,
       const Symbol& ellipsis,
       const std::set<Symbol>& literals
   ) -> bool {
-    //nstd::cout << "parse_pattern_var: \n";
+    //std::cout << "parse_pattern_var: "
+    //          + pattern_var->get<Symbol>().get_value()
+    //          << std::endl;
 
-    // If pattern variable is previously used, throw syntax error.
+    // The pattern symbol to bind to.
     Symbol& pattern_binding = pattern_var->get<Symbol>();
-    // TODO: UNCOMMENT
-    //if(bindings.count(pattern_binding) > 0) {
-    //  throw MacroExpansionException(
-    //      3196,
-    //      "PatternParser: reuse of pattern variable invalid."
-    //  );
-    //}
+    if(bindings.count(pattern_binding) < 1) {
+      bindings[pattern_binding] = std::vector<NodePtr>();
+    }
 
     // Push back if it is a pattern var.
     NodePtr pattern_bind;
@@ -137,14 +164,30 @@ PatternParser make_parse_pattern_var(NodePtr& pattern_var) {
       return false;
     }
 
-    if(bindings.count(pattern_binding) < 1) {
-      // Add new vector
-      bindings[pattern_binding] = std::vector<NodePtr>{pattern_bind};
-    } else {
-      // Already exists, push back.
-      bindings[pattern_binding].push_back(pattern_bind);
-    }
+    bindings[pattern_binding].push_back(pattern_bind);
     macro = cdr(macro);
+    return true;
+  };
+}
+
+PatternParser make_save_pattern_var(NodePtr& pattern_var) {
+
+  //std::cout << "make_save_pattern_var: saving " + pattern_var->get<Symbol>()
+  //    .get_value() << std::endl;
+  return [=](
+      NodePtr& macro,
+      SyntaxRuleBindings& bindings,
+      const Symbol& ellipsis,
+      const std::set<Symbol>& literals
+  ) -> bool {
+
+    // The pattern symbol to bind to.
+    Symbol& pattern_binding = pattern_var->get<Symbol>();
+    //std::cout << "make_save_pattern_var\n";
+    if(bindings.count(pattern_binding) < 1) {
+      //std::cout << "Saving " << pattern_binding.get_value() << std::endl;
+      bindings[pattern_binding] = std::vector<NodePtr>();
+    }
     return true;
   };
 }
@@ -187,10 +230,10 @@ PatternParser make_parse_kleene(PatternParser& func, size_t post_bind_count) {
       const Symbol& ellipsis,
       const std::set<Symbol>& literals
   ) -> bool {
-    //nstd::cout << "parse_kleene\n";
+    //std::cout << "parse_kleene\n";
 
     int count = 0;
-    int limit = (int)length(macro) - post_bind_count;
+    int limit = (int)length(macro) - (int)post_bind_count;
 
     // Limit guard
     if(limit < 0) {
@@ -253,6 +296,67 @@ PatternParser make_then(PatternParser& left, PatternParser& right) {
   };
 }
 
+PatternParser make_list(PatternParser& pattern) {
+
+  //std::cout << "parse: make_list\n";
+  return [=](
+      NodePtr& macro,
+      SyntaxRuleBindings& bindings,
+      const Symbol& ellipsis,
+      const std::set<Symbol>& literals
+  ) -> bool {
+
+    //std::cout << "entered list: " << *macro << std::endl;
+    if(!is_proper_list(macro) && !is_improper_list(macro)) {
+      return false;
+    }
+    if(is_null_list(macro)) {
+      return false;
+    }
+
+    NodePtr inner_ptr = car(macro);
+    if(!is_proper_list(inner_ptr) && !is_improper_list(inner_ptr)) {
+      return false;
+    }
+    //std::cout << "parsing list: " << *inner_ptr << std::endl;
+    //std::cout << "passed on: " << *macro << std::endl;
+    macro = cdr(macro);
+    return pattern(inner_ptr, bindings, ellipsis, literals);
+  };
+}
+
+
+// At the start of every pattern parser creation, I need to iterate through
+// the current list and save all pattern variables.
+// This is recursive, it should iterate the entire pattern.
+PatternParser make_save_all_pattern_vars(
+  NodePtr& pattern,
+  const Symbol& ellipsis,
+  const std::set<Symbol>& literals
+  ) {
+  //std::cout << "SAVING ALL PATTERN VARIABLES\n";
+  NodePtr it = pattern;
+  PatternParser builder = make_parse_unit();
+  PatternParser curr_parser = make_parse_unit();
+
+  while(!is_null_list(it)) {
+    NodePtr curr = car(it);
+
+    if(!is_literal(curr, ellipsis, literals) &&
+        is_pattern_var(curr, ellipsis, literals)) {
+      curr_parser = make_save_pattern_var(curr);
+
+    } else if(is_proper_list(curr) || is_improper_list(curr)) {
+      curr_parser = make_save_all_pattern_vars(curr, ellipsis, literals);
+    }
+
+    it = cdr(it);
+    builder = make_then(builder, curr_parser);
+  }
+
+  return builder;
+}
+
 
 // <pattern> matching functions
 PatternParser make_pattern_parser(
@@ -262,7 +366,9 @@ PatternParser make_pattern_parser(
 ) {
 
   //std::cout << "MAKE_PTRN_PARSR: " << *pattern << std::endl;
-  PatternParser parser_builder = make_parse_unit();
+  PatternParser parser_builder = make_save_all_pattern_vars(
+      pattern, ellipsis, literals
+  );
   PatternParser curr_parser = make_parse_unit();
 
   NodePtr curr = pattern;
@@ -294,6 +400,8 @@ PatternParser make_pattern_parser(
 
     }
 
+    bool found_pattern_var = false;
+
     // Process current node
     if(is_literal(curr_data, ellipsis, literals)) {
       //std::cout << "build: adding literal\n";
@@ -302,20 +410,27 @@ PatternParser make_pattern_parser(
     } else if(is_pattern_var(curr_data, ellipsis, literals)) {
       //std::cout << "build: adding pat var\n";
       curr_parser = make_parse_pattern_var(curr_data);
+      found_pattern_var = true;
 
     } else if(is_pattern(curr_data)) {
       //std::cout << "build: adding pat\n";
       curr_parser = make_pattern_parser(curr_data, ellipsis, literals);
+      curr_parser = make_list(curr_parser);
 
     } else if(is_ellipsis(curr_data, ellipsis)) {
-      //std::cout << "build: adding ellipise\n";
+      //std::cout << "build: adding unit\n";
       curr_parser = make_parse_unit();
+
     }
 
     // Process ellipsis if applicable
     if(found_ellipsis && !ellipse_consumed) {
       ellipse_consumed = true;
       curr_parser = consume_ellipsis(curr, curr_parser, ellipsis, literals);
+      if(found_pattern_var) {
+        auto func = make_save_pattern_var(curr_data);
+        curr_parser = make_then(func, curr_parser);
+      }
     }
 
     parser_builder = make_then(parser_builder, curr_parser);
@@ -325,7 +440,7 @@ PatternParser make_pattern_parser(
 
 
   if(!is_null_list(curr)) {
-    //std::cout << "build: entered outter loop\n";
+    //std::cout << "build: entered outer loop\n";
 
     NodePtr curr_data = car(curr);
 
@@ -334,17 +449,20 @@ PatternParser make_pattern_parser(
       curr_parser = make_parse_literal(curr_data);
 
     } else if(is_pattern_var(curr_data, ellipsis, literals)) {
-      //nstd::cout << "build: adding patrn var\n";
+      //std::cout << "build: adding patrn var\n";
       curr_parser = make_parse_pattern_var(curr_data);
 
     } else if(is_pattern(curr_data)) {
       //std::cout << "build: adding pattnr\n";
       curr_parser = make_pattern_parser(curr_data, ellipsis, literals);
+      curr_parser = make_list(curr_parser);
 
     } else if(is_ellipsis(curr_data, ellipsis)) {
-      //std::cout << "build: adding ellipise\n";
+      //std::cout << "build: adding unit \n";
       curr_parser = make_parse_unit();
+
     }
+
     parser_builder = make_then(parser_builder, curr_parser);
   }
   curr_parser = make_parse_null();

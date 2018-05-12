@@ -4,7 +4,6 @@
 #include "shaka_scheme/system/lexer/rules/init.hpp"
 #include "shaka_scheme/runtime/stdproc/numbers_arithmetic.hpp"
 #include "shaka_scheme/runtime/stdproc/equivalence_predicates.hpp"
-#include "shaka_scheme/system/exceptions/BaseException.hpp"
 #include "shaka_scheme/system/exceptions/TypeException.hpp"
 #include "shaka_scheme/system/vm/HeapVirtualMachine.hpp"
 #include "shaka_scheme/system/vm/compiler/Compiler.hpp"
@@ -26,24 +25,6 @@ int main() {
   std::cout << "Welcome to Shaka Scheme!" << std::endl;
 
   bool done = false;
-  //shaka::Token token(shaka::Token::Type::END_OF_FILE, "\0");
-  //shaka::Tokenizer input(std::cin);
-  //while (!done) {
-  //  std::cout << "> " << std::flush;
-  //  try {
-  //    token = input.get();
-  //    std::cout << token << std::endl;
-  //    if (token.get_type() == shaka::Token::Type::DIRECTIVE) {
-  //      if (token.get_string() == std::string("quit")) {
-  //        done = true;
-  //      }
-  //    }
-  //  } catch (shaka::BaseException e) {
-  //    std::cerr << e.what() << std::endl;
-  //    std::cin.clear();
-  //    std::cin.ignore(std::numeric_limits<int>::max());
-  //  }
-  //}
 
   std::string buf;
 
@@ -162,13 +143,20 @@ int main() {
 
   auto halt_instruction = shaka::core::list(create_node(halt));
 
+  shaka::macro::MacroContext macro_context(hvm);
+
   while (!done) {
     try {
       std::cout << "> " << std::flush;
+
+      if(std::cin.eof()) {
+        done = true;
+        continue;
+      }
       getline(std::cin, buf);
+
       shaka::parser::ParserInput input(buf);
       auto result = shaka::parser::parse_datum(input);
-      //std::cout << "parsed datum" << std::endl;
       if (result.is_lexer_error()) {
         std::cout << "LexerError: " << result << std::endl;
         input.tokens.clear();
@@ -182,28 +170,41 @@ int main() {
         continue;
       }
       shaka::Expression expr = result.it;
-      shaka::macro::MacroContext macro_context(hvm);
+      std::cout << "DEBUG: expression pre-macro expansion" << std::endl;
+      std::cout << "DEBUG: " << *expr << std::endl;
+
+      std::cout << std::endl;
       shaka::macro::run_macro_expansion(expr, macro_context);
-      //std::cout << "macro expanded datum" << std::endl;
-      //std::cout << *expr << std::endl;
+      std::cout << std::endl;
+      std::cout << "DEBUG: expression post-macro expansion" << std::endl;
+      std::cout << "DEBUG: " << *expr << std::endl;
+
       shaka::Expression compiled = compiler.compile(expr, halt_instruction);
-      //std::cout << "compiled datum" << std::endl;
-      //std::cout << *compiled << std::endl;
+      //std::cout << "DEBUG: compiled datum" << std::endl;
+      //std::cout << "DEBUG: " << *compiled << std::endl;
+
+      std::cout << std::endl;
       hvm.set_expression(compiled);
       do {
         hvm.evaluate_assembly_instruction();
       } while (shaka::core::car(hvm.get_expression())->get<shaka::Symbol>() !=
           shaka::Symbol("halt"));
       std::cout << *hvm.get_accumulator() << std::endl;
-    } catch (shaka::InvalidInputException e) {
+
+    } catch (const shaka::InvalidInputException& e) {
       std::cerr << "InvalidInputException: " << e.what() << std::endl;
-    } catch (shaka::TypeException e) {
+    } catch (const shaka::TypeException&  e) {
       std::cerr << "TypeException: " << e.what() << std::endl;
-    }
-    catch (std::runtime_error e) {
+    } catch (const shaka::MacroExpansionException& e) {
+      std::cerr << "MacroExpansionException: " << e.what() << std::endl;
+    } catch (const std::runtime_error&  e) {
       std::cerr << "RuntimeError: " << e.what() << std::endl;
       break;
+    } catch (const std::exception& e) {
+      std::cerr << "exception: " << e.what() << std::endl;
+      break;
     }
+
   }
 
   std::cout << "Exiting..." << std::endl;

@@ -31,8 +31,8 @@ public:
    * matching and expanding.
    */
   SyntaxRulesMacro(
-      Symbol& macro_keyword,
-      std::vector<SyntaxRulePtr>& syntax_rules
+      const Symbol& macro_keyword,
+      const std::vector<SyntaxRulePtr>& syntax_rules
   );
 
   /**

@@ -1,14 +1,16 @@
 #include <gmock/gmock.h>
 
+#include "shaka_scheme/system/base/DataPair.hpp"
 #include "shaka_scheme/system/core/lists.hpp"
 #include "shaka_scheme/system/exceptions/MacroExpansionException.hpp"
 #include "shaka_scheme/system/parser/syntax_rules/SyntaxRule.hpp"
+#include "shaka_scheme/system/gc/GC.hpp"
+#include "shaka_scheme/system/gc/init_gc.hpp"
 
 using namespace shaka;
 using namespace shaka::core;
 using namespace shaka::macro;
 
-const auto& c = create_node;
 Symbol ellipsis("...");
 std::set<Symbol> literal_id_none;
 
@@ -18,6 +20,9 @@ TEST(SyntaxRuleUnitTest, gtest) {
 
 
 TEST(SyntaxRuleUnitTest, constructor) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   std::set<Symbol> literal_ids;
   NodePtr pattern = list(c(Symbol("test")));
@@ -33,6 +38,9 @@ TEST(SyntaxRuleUnitTest, constructor) {
 
 
 TEST(SyntaxRuleUnitTest, complex_constructor) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   std::set<Symbol> literal_ids;
   literal_ids.insert(Symbol("then"));
@@ -62,6 +70,9 @@ TEST(SyntaxRuleUnitTest, complex_constructor) {
 
 
 TEST(SyntaxRuleUnitTest, build_simple) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   // (define-syntax take-none (syntax-rules () ((take-none) (+ 1 2))))
   std::set<Symbol> literal_ids;
@@ -75,6 +86,9 @@ TEST(SyntaxRuleUnitTest, build_simple) {
 
 
 TEST(SyntaxRuleUnitTest, build_exception) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   // (define-syntax test (syntax-rules () [test (quote hello)]))
   std::set<Symbol> literal_ids;
@@ -88,6 +102,9 @@ TEST(SyntaxRuleUnitTest, build_exception) {
 
 
 TEST(SyntaxRuleUnitTest, match_simple) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   // (define-syntax take-none (syntax-rules () ((take-none) (+ 1 2))))
   std::set<Symbol> literal_ids;
@@ -111,6 +128,9 @@ TEST(SyntaxRuleUnitTest, match_simple) {
 
 
 TEST(SyntaxRuleUnitTest, match_simple_literal) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   // (define-syntax take-none (syntax-rules (lit) ((take-none) success)))
   // (define-syntax take-none (syntax-rules (lit) ((take-none lit) success)))
@@ -136,6 +156,9 @@ TEST(SyntaxRuleUnitTest, match_simple_literal) {
 
 
 TEST(SyntaxRuleUnitTest, match_take_one) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   // (define-syntax take-one (syntax-rules () ((take-one 1) item)))
   // (define-syntax take-one (syntax-rules () ((take-one item) item)))
@@ -188,6 +211,9 @@ TEST(SyntaxRuleUnitTest, match_take_one) {
 
 
 TEST(SyntaxRuleUnitTest, match_ellipsis) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   // (d/s take-multi (syntax-rules () ((take-multi a ...) 1)))
   // (d/s take-multi (syntax-rules () ((take-multi a ... b) 1)))
@@ -266,6 +292,9 @@ TEST(SyntaxRuleUnitTest, match_ellipsis) {
 
 
 TEST(SyntaxRuleUnitTest, transform_simple) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   // (define-syntax take-none (syntax-rules () ((take-none) (+ 1 2))))
   std::set<Symbol> literal_ids;
@@ -306,6 +335,9 @@ TEST(SyntaxRuleUnitTest, transform_simple) {
 }
 
 TEST(SyntaxRuleUnitTest, transform_simple_literal) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   // (define-syntax take-none (syntax-rules (lit) ((take-none) (success))))
   // (define-syntax take-none (syntax-rules (lit) ((take-none lit) (success))))
@@ -331,6 +363,9 @@ TEST(SyntaxRuleUnitTest, transform_simple_literal) {
 
 
 TEST(SyntaxRuleUnitTest, transform_take_one) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   // (define-syntax take-one (syntax-rules () ((take-one 1) item)))
   // (define-syntax take-one (syntax-rules () ((take-one item) item)))
@@ -383,6 +418,9 @@ TEST(SyntaxRuleUnitTest, transform_take_one) {
 
 
 TEST(SyntaxRuleUnitTest, transform_ellipsis) {
+  shaka::gc::GC garbage_collector;
+  shaka::gc::init_create_node(garbage_collector);
+  const auto& c = create_node;
 
   // (d/s take-multi (syntax-rules () ((take-multi a ...) 1)))
   // (d/s take-multi (syntax-rules () ((take-multi a ... b) 1)))
@@ -445,26 +483,32 @@ TEST(SyntaxRuleUnitTest, transform_ellipsis) {
   ASSERT_NO_THROW(syntax_rule3.build());
 
   std::cout << "BEFORE: " << *macro1_1 << std::endl;
-  std::cout << "BEFORE: " << *macro1_2 << std::endl;
-  std::cout << "BEFORE: " << *macro2_1 << std::endl;
-  std::cout << "BEFORE: " << *macro2_2 << std::endl;
-  std::cout << "BEFORE: " << *macro3_1 << std::endl;
-  std::cout << "BEFORE: " << *macro3_2 << std::endl;
-  std::cout << "BEFORE: " << *macro3_3 << std::endl;
   ASSERT_TRUE(syntax_rule1.transform(macro1_1));
+  std::cout << "AFTER: " << *macro1_1 << std::endl << std::endl;
+
+  std::cout << "BEFORE: " << *macro1_2 << std::endl;
   ASSERT_TRUE(syntax_rule1.transform(macro1_2));
+  std::cout << "AFTER: " << *macro1_2 << std::endl << std::endl;
+
+  std::cout << "BEFORE: " << *macro2_1 << std::endl;
   ASSERT_TRUE(syntax_rule2.transform(macro2_1));
+  std::cout << "AFTER: " << *macro2_1 << std::endl << std::endl;
+
+  std::cout << "BEFORE: " << *macro2_2 << std::endl;
   ASSERT_TRUE(syntax_rule2.transform(macro2_2));
+  std::cout << "AFTER: " << *macro2_2 << std::endl << std::endl;
+
+  std::cout << "BEFORE: " << *macro3_1 << std::endl;
   ASSERT_TRUE(syntax_rule3.transform(macro3_1));
+  std::cout << "AFTER: " << *macro3_1 << std::endl << std::endl;
+
+  std::cout << "BEFORE: " << *macro3_2 << std::endl;
   ASSERT_TRUE(syntax_rule3.transform(macro3_2));
+  std::cout << "AFTER: " << *macro3_2 << std::endl << std::endl;
+
+  std::cout << "BEFORE: " << *macro3_3 << std::endl;
   ASSERT_TRUE(syntax_rule3.transform(macro3_3));
-  std::cout << "AFTER: " << *macro1_1 << std::endl;
-  std::cout << "AFTER: " << *macro1_2 << std::endl;
-  std::cout << "AFTER: " << *macro2_1 << std::endl;
-  std::cout << "AFTER: " << *macro2_2 << std::endl;
-  std::cout << "AFTER: " << *macro3_1 << std::endl;
-  std::cout << "AFTER: " << *macro3_2 << std::endl;
-  std::cout << "AFTER: " << *macro3_3 << std::endl;
+  std::cout << "AFTER: " << *macro3_3 << std::endl << std::endl;
   // TODO: ASSERT EXPANSION VS TEMPLATE EQUIVALENCE
 }
 

@@ -45,9 +45,12 @@ Value Environment::get_value(const Key& key) {
   }
     /* Returns null if it does not exist and doesn't have a parent */
   else if (this->parent == nullptr) {
-    throw shaka::InvalidInputException(2000,
-                                       "Environment.get_value: key does not "
-                                           "have an assigned value");
+    throw shaka::InvalidInputException(
+        2000,
+        "Environment.get_value: key "
+            + key.get_value()
+            + " does not have an assigned value"
+    );
   }
     /* Look for key in the parent environment */
   else {

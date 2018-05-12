@@ -45,12 +45,17 @@ struct IdentifierData {
    * @param macro A shared pointer to an optional macro. If it is not
    * present, this identifier binding does not bind to a macro.
    */
-  IdentifierData(ScopeSet scopes, MacroPtr macro = nullptr) :
+  IdentifierData(
+      ScopeSet scopes,
+      MacroPtr macro = nullptr,
+      NodePtr value = NodePtr()) :
       scopes(scopes),
-      macro(std::move(macro)) {}
+      macro(std::move(macro)),
+      data(std::move(value)) {}
 
   ScopeSet scopes;
   MacroPtr macro;
+  NodePtr data;
 };
 
 /**
@@ -60,8 +65,8 @@ struct IdentifierData {
 struct MacroContext {
 
   /**
-   * @brief Intializes the MacroContext with the 0th scope and the 1st scope.
-   * @param hvm The HeapVirtualMachien to query for the presence of primitive
+   * @brief Initialize the MacroContext with the 0th scope and the 1st scope.
+   * @param hvm The HeapVirtualMachine to query for the presence of primitive
    * forms.
    */
   MacroContext(HeapVirtualMachine& hvm);
@@ -93,6 +98,14 @@ struct MacroContext {
   void map_macro(Symbol symbol, MacroPtr macro);
 
   /**
+   * @brief Map a lexical binding between an identifier and a value. If the
+   * value does not exist in the environment, then the symbol binds to the
+   * literal symbol.
+   * @param symbol The symbol to bind to.
+   */
+  void map_lexical_binding(Symbol symbol);
+
+  /**
    * @brief Gets an iterator to a list of bindings that share the same
    * symbol, but not necesarily the same sets of scopes.
    * @param symbol The symbol to query for in the identifier bindings.
@@ -100,6 +113,15 @@ struct MacroContext {
    */
   std::multimap<shaka::Symbol, IdentifierData>::const_iterator
   get_bindings(Symbol symbol);
+
+  /**
+   * @brief Returns the lexical binding for the corresponding macro symbol.
+   * If the symbol was unbound, it returns the literal symbol as the value.
+   * @param macro_identifier
+   * @param symbol
+   * @return
+   */
+  NodePtr get_lexical_binding(MacroPtr macro, Symbol symbol);
 
   /**
    * @brief A reference to the virtual machine to use when deciding the

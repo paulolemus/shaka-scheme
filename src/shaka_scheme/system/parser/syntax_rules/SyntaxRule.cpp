@@ -10,10 +10,10 @@ namespace shaka {
 namespace macro {
 
 SyntaxRule::SyntaxRule(
-    Symbol& ellipsis,
-    std::set<Symbol>& literal_ids,
-    NodePtr pattern,
-    NodePtr templat
+    const Symbol& ellipsis,
+    const std::set<Symbol>& literal_ids,
+    const NodePtr pattern,
+    const NodePtr templat
 ) : ellipsis(ellipsis),
     literal_ids(literal_ids),
     pattern(pattern),
@@ -226,7 +226,7 @@ static NodePtr transform_list(
   NodePtr curr = it;
   NodePtr segment;
 
-  std::cout << "transform list: " << *it << std::endl;
+  std::cout << "SyntaxRule: transforming list: " << *it << std::endl;
 
   // Iterate through the template, until the end is reached.
   // For each symbol, build the corresponding expanded form of the symbol and
@@ -273,7 +273,15 @@ static NodePtr transform_list(
       segment = list(transform_list(curr, ellipsis, bindings));
       break;
 
+    case Data::Type::NULL_LIST:
+      segment = list(list());
+      break;
+
     default:
+    std::cout << "ENUM TYPE: "
+              << static_cast<std::underlying_type<Data::Type >::type>
+                 (curr->get_type())
+              << std::endl;
       throw MacroExpansionException(
           60001,
           "NodePtr type is not implemented for macro expansion"
@@ -290,7 +298,7 @@ static NodePtr transform_list(
 
 bool SyntaxRule::transform(NodePtr macro) {
 
-  std::cout << "transform: " << *macro << std::endl;
+  std::cout << "SyntaxRule: transform: " << *macro << std::endl;
 
   if(!is_built) {
     throw MacroExpansionException(
@@ -323,7 +331,7 @@ bool SyntaxRule::transform(NodePtr macro) {
   }
 
   for(auto& pair: bindings) {
-    std::cout << pair.first.get_value() << ": \n";
+    std::cout << "SyntaxRule bindings: " << pair.first.get_value() << ": ";
     for(auto& np : pair.second) {
       std::cout << *np << ", ";
     }
@@ -342,15 +350,19 @@ bool SyntaxRule::transform(NodePtr macro) {
         transform_list(templat, ellipsis, bindings)
     );
 
+    if(core::is_null_list(expanded_form)) {
+      expanded_form = list(list());
+    }
+
     core::set_car(macro, core::car(expanded_form));
     core::set_cdr(macro, core::cdr(expanded_form));
 
-  } catch(const std::exception& e) {
+  } catch(const MacroExpansionException& e) {
     std::cout << e.what() << std::endl;
-    std::cout << "SYNTAXRULE: FAILED" << std::endl;
+    std::cout << "SyntaxRule.transform(): Failed" << std::endl;
     return false;
   }
-  std::cout << "SYNTAXRULE: SUCCESS" << std::endl;
+  std::cout << "SyntaxRule.transform(): Success" << std::endl;
   return true;
 }
 

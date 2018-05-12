@@ -29,29 +29,8 @@ bool is_primitive_set(Symbol symbol, MacroContext& context) {
     return false;
   }
   return false;
-};
+}
 
-MacroPtr get_macro(Symbol symbol, MacroContext& context) {
-  IdentifierData current_binding(context.curr_scopes, nullptr);
-  IdentifierData max_data(std::set<std::size_t>(), nullptr);
-  for (auto it = context.get_bindings(symbol);
-       it != context.identifier_bindings.end();
-       ++it) {
-    const auto scopes = it->second.scopes;
-    std::vector<std::size_t> intersect;
-    std::set_intersection(
-        scopes.begin(),
-        scopes.end(),
-        current_binding.scopes.begin(),
-        current_binding.scopes.end(),
-        std::back_inserter(intersect)
-    );
-    if (intersect.size() > max_data.scopes.size()) {
-      max_data = it->second;
-    }
-  }
-  return max_data.macro;
-};
 
 bool is_primitive_syntax_rules(Symbol symbol, MacroContext& context) {
   try {
@@ -265,20 +244,30 @@ bool process_lambda_form(NodePtr& it, MacroContext& context) {
   }
 };
 
-std::ostream& operator<<(
-    std::ostream& lhs,
-    const MacroContext& rhs) {
-  lhs << "MacroContext(curr_scope: " << rhs.curr_scope << " | scope_stack: { ";
-  for (auto it : rhs.curr_scope_stack) {
-    lhs << it << " ";
+
+MacroPtr get_macro(Symbol symbol, MacroContext& context) {
+  IdentifierData current_binding(context.curr_scopes, nullptr);
+  IdentifierData max_data(std::set<std::size_t>(), nullptr);
+  for (auto it = context.get_bindings(symbol);
+       it != context.identifier_bindings.end();
+       ++it) {
+    const auto scopes = it->second.scopes;
+    std::vector<std::size_t> intersect;
+    std::set_intersection(
+        scopes.begin(),
+        scopes.end(),
+        current_binding.scopes.begin(),
+        current_binding.scopes.end(),
+        std::back_inserter(intersect)
+    );
+    if (intersect.size() > max_data.scopes.size() && it->second.macro) {
+      std::cout << "DEBUG: get_macro(): found macro" << std::endl;
+      max_data = it->second;
+      //std::cout << max_data.macro << std::endl;
+    }
   }
-  lhs << "} | curr_scopes: { ";
-  for (auto it : rhs.curr_scopes) {
-    lhs << it << " ";
-  }
-  lhs << "})";
-  return lhs;
-}
+  return max_data.macro;
+};
 
 void build_macro(NodePtr root, MacroContext& context) {
   //std::cout << "BUILDING MACRO" << std::endl;
@@ -333,8 +322,6 @@ void build_macro(NodePtr root, MacroContext& context) {
     NodePtr pattern = core::car(syntax_rule_list);
     NodePtr templat = core::car(core::cdr(syntax_rule_list));
 
-    context.push_scope();
-
     //std::cout << *syntax_rule_list << std::endl;
     //std::cout << *pattern << std::endl;
     //std::cout << *templat << std::endl;
@@ -347,8 +334,6 @@ void build_macro(NodePtr root, MacroContext& context) {
     );
     syntax_rules.push_back(syntax_rule);
 
-    context.pop_scope();
-    //std::cout << *syntax_rules.back() << std::endl;
     root = core::cdr(root);
   }
 
@@ -375,13 +360,12 @@ void build_macro(NodePtr root, MacroContext& context) {
 void run_macro_expansion(
     NodePtr root,
     MacroContext& macro_context) {
-  //std::cout << "\nBEFORE TRAVERSE TREE: " << *root << std::endl;
-  //std::cout << "BEFORE TRAVERSE TREE CONTEXT: " << macro_context << std::endl;
-  //for (
-  //  auto binding :
-  //    macro_context.identifier_bindings) {
-  //  //std::cout << "BEFORE TRAVERSE TREE BINDINGS {" << binding.first << " | "
-  //  //    "" << binding .second.scopes << std::endl;
+  //std::cout << "DEBUG: BEFORE TRAVERSE TREE: " << *root << std::endl;
+  //std::cout << "DEBUG: BEFORE TRAVERSE TREE CONTEXT: " << macro_context <<
+  // std::endl;
+  //for (auto binding: macro_context.identifier_bindings) {
+  //  std::cout << "BEFORE TRAVERSE TREE BINDINGS {" << binding.first << " | "
+  //      "" << binding .second.scopes << std::endl;
   //}
   int count = 0;
   bool need_to_pop_scope = false;
@@ -390,14 +374,12 @@ void run_macro_expansion(
     if (core::is_symbol(proc_name)) {
       Symbol identifier = proc_name->get<Symbol>();
       if (auto macro = get_macro(identifier, macro_context)) {
-        //std::cout << "NEED TO EXPAND MACRO HERE!" << std::endl;
-        try {
-          std::cout << "Caught macro: " << identifier << std::endl;
-          std::cout << "About to begin expansion on : " << *root << std::endl;
-          macro->transform(root);
-        } catch(const std::exception& e) {
-          std::cerr << e.what() << std::endl;
-        }
+        std::cout << "DEBUG: Caught macro: " << identifier << std::endl;
+        //std::cout << "DEBUG: About to begin expansion on : " << *root <<
+         //std::endl;
+        macro->transform(root);
+        //std::cout << "post transform: " << *root << std::endl;
+
       } else {
         if (process_define_form(root, macro_context)) {
           //std::cout << "PRIMITIVE: define" << std::endl;
@@ -428,15 +410,15 @@ void run_macro_expansion(
         }
       }
     } else if (!core::is_pair(proc_name)) {
-      throw MacroExpansionException(60010, "procedure name cannot be a "
-          "non-identifier or non-procedure call");
+      //throw MacroExpansionException(60010, "procedure name cannot be a "
+      //    "non-identifier or non-procedure call");
     }
   }
   for (NodePtr it = root;
        core::is_pair(it);
        it = core::cdr(it), count++) {
     auto item = core::car(it);
-    //std::cout << "#" << count << ": " << *it << " | " << *item << std::endl;
+    std::cout << "#" << count << ": " << *it << " | " << *item << std::endl;
     if (core::is_proper_list(item)) {
       run_macro_expansion(item, macro_context);
     }
